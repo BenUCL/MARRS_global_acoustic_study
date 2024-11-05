@@ -1,17 +1,23 @@
  #@title Imports. { vertical-output: true }
-from etils import epath
-from ml_collections import config_dict
-import numpy as np
+import aifc
 import os
+import wave
+from chunk import Chunk
+
+import librosa
+import numpy as np
+import soundfile as sf
 import tensorflow as tf
 import tqdm
-from chirp.inference import colab_utils
-colab_utils.initialize(use_tf_gpu=True, disable_warnings=True)
+from audioread import NoBackendError
+
+from etils import epath
+from ml_collections import config_dict
 
 from chirp import audio_utils
-from chirp.inference import embed_lib
-from chirp.inference import tf_examples
+from chirp.inference import colab_utils, embed_lib, tf_examples
 
+colab_utils.initialize(use_tf_gpu=True, disable_warnings=True)
 
 
 #@title Configuration. { vertical-output: true }
@@ -30,8 +36,8 @@ config.embed_fn_config.model_config = config_dict.ConfigDict()
 # source_file_patterns should contain a list of globs of audio files, like:
 # ['/home/me/*.wav','/home/me/*.WAV', '/home/me/other/*.flac']
 #config.source_file_patterns = [os.path.join(base_dir,'/marrs_acoustics/data/test_audio/*.WAV')] 
-config.source_file_patterns = ['/media/Backup/mars_global_acoustic_study/kenya_acoustics_vids/Audio/raw_audio/*.WAV'] 
-config.output_dir = os.path.join(base_dir,'marrs_acoustics/data/output_dir_ken/embeddings')  
+config.source_file_patterns = ['/media/mars_5tb_drive/mars_global_acoustic_study/indonesia_acoustics/raw_audio/*.WAV'] 
+config.output_dir = os.path.join(base_dir,'marrs_acoustics/data/output_dir_indonesia/raw_embeddings')  
 
 # For Perch, the directory containing the model.
 # Alternatively, set the perch_tfhub_model_version, and the model will load
@@ -97,7 +103,6 @@ print('Setup complete!')
 
 
 
-
 # Uses multiple threads to load audio before embedding.
 # This tends to be faster, but can fail if any audio files are corrupt.
 
@@ -115,20 +120,6 @@ print(f'Found {len(existing_embedding_ids)} existing embedding ids. \n'
       f'Processing {len(new_source_infos)} new source infos. ')
 
 
-
-
-
-
-
-
-
-
-import librosa
-import soundfile as sf
-from audioread import NoBackendError
-from chunk import Chunk
-import aifc
-import wave
 
 def safe_load_audio(filepath: str, sample_rate: int):
     try:
@@ -183,43 +174,3 @@ for ex in ds.as_numpy_iterator():
   print(ex['filename'])
   print(ex['embedding'].shape, flush=True)
   break
-
-####################### old below
-
-
-
-
-# try:
-#   audio_loader = lambda fp, offset: audio_utils.load_audio_window(
-#       fp, offset, sample_rate=config.embed_fn_config.model_config.sample_rate,
-#       window_size_s=config.get('shard_len_s', -1.0))
-#   audio_iterator = audio_utils.multi_load_audio_window(
-#       filepaths=[s.filepath for s in new_source_infos],
-#       offsets=[s.shard_num * s.shard_len_s for s in new_source_infos],
-#       audio_loader=audio_loader,
-#   )
-#   with tf_examples.EmbeddingsTFRecordMultiWriter(
-#       output_dir=output_dir, num_files=config.get('tf_record_shards', 1)) as file_writer:
-#     for source_info, audio in tqdm.tqdm(
-#         zip(new_source_infos, audio_iterator), total=len(new_source_infos)):
-#       file_id = source_info.file_id(config.embed_fn_config.file_id_depth)
-#       offset_s = source_info.shard_num * source_info.shard_len_s
-#       example = embed_fn.audio_to_example(file_id, offset_s, audio)
-#       if example is None:
-#         fail += 1
-#         continue
-#       file_writer.write(example.SerializeToString())
-#       succ += 1
-#     file_writer.flush()
-# finally:
-#   del(audio_iterator)
-# print(f'\n\nSuccessfully processed {succ} source_infos, failed {fail} times.')
-
-# fns = [fn for fn in output_dir.glob('embeddings-*')]
-# ds = tf.data.TFRecordDataset(fns)
-# parser = tf_examples.get_example_parser()
-# ds = ds.map(parser)
-# for ex in ds.as_numpy_iterator():
-#   print(ex['filename'])
-#   print(ex['embedding'].shape, flush=True)
-#   break
