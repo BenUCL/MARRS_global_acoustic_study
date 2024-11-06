@@ -8,7 +8,7 @@ This guide explains how to set up Perch with GPU usage on Linux. The system used
 First, use the `perch_conda_env.yml` file to create the Conda environment. This will install TensorFlow 2.15.0 alongside the correct CUDA libraries.
 
 ```bash
-cd /marrs_acoustics/code/setup
+cd /marrs_acoustics/code/setup/env_setup
 conda env create -f perch_conda_env.yml
 ```
 
