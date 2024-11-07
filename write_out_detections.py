@@ -1,9 +1,8 @@
 """This script can be used to write out the audio clips that were detected by the model.
 1. It reads the inference csv, finds the raw audio sample and writes out each 5sec clip that 
-was predicted to contain the target sound. 
+was predicted to contain the target sound into a newly created folder. 
 2. The new filename will begin with the logit score, then the timestamp in seconds, and 
-finally the original filename. TODO: Set so that new folders for each country and sound are
-created.
+finally the original filename. 
 3. Set the logit cutoff accordingly to filter by confidence. It will first write the 
 predictions with the lowest logit score, so that  these can be reviewed first if not running 
 the script until completion. """
@@ -21,7 +20,7 @@ from typing import Optional
 TARGET_COUNTRY = 'indonesia'
 TARGET_SOUND = 'scrape_fullband'
 # Only samples with a logit score above the value set below will be written. Set to 0 to write all samples. 
-LOGIT_CUTOFF = 1.0 
+LOGIT_CUTOFF = 2.0 
 # If set to None, all files will be written, otherwise will stop after this number of files.
 MAX_COUNT: Optional[int] = 100
 
