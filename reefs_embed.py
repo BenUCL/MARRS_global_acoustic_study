@@ -17,6 +17,10 @@ from ml_collections import config_dict
 from chirp import audio_utils
 from chirp.inference import colab_utils, embed_lib, tf_examples
 
+# Set dataset to embed
+COUNTRY = 'australia'
+
+# some colab thing, perhaps remove
 colab_utils.initialize(use_tf_gpu=True, disable_warnings=True)
 
 
@@ -36,8 +40,8 @@ config.embed_fn_config.model_config = config_dict.ConfigDict()
 # source_file_patterns should contain a list of globs of audio files, like:
 # ['/home/me/*.wav','/home/me/*.WAV', '/home/me/other/*.flac']
 #config.source_file_patterns = [os.path.join(base_dir,'/marrs_acoustics/data/test_audio/*.WAV')] 
-config.source_file_patterns = ['/media/mars_5tb_drive/mars_global_acoustic_study/indonesia_acoustics/raw_audio/*.WAV'] 
-config.output_dir = os.path.join(base_dir,'marrs_acoustics/data/output_dir_indonesia/raw_embeddings')  
+config.source_file_patterns = ['/media/mars_5tb_drive/mars_global_acoustic_study/' + COUNTRY + '_acoustics/raw_audio/*.WAV'] 
+config.output_dir = os.path.join(base_dir,'marrs_acoustics/data/output_dir_'+ COUNTRY + '/raw_embeddings')  
 
 # For Perch, the directory containing the model.
 # Alternatively, set the perch_tfhub_model_version, and the model will load
