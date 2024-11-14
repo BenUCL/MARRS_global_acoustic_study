@@ -18,9 +18,9 @@ from typing import Optional
 
 # Only write out files where logits are equal to above this score
 TARGET_COUNTRY = 'australia'
-TARGET_SOUND = 'oink'
+TARGET_SOUND = 'huff'
 # Only samples with a logit score above the value set below will be written. Set to 0 to write all samples. 
-LOGIT_CUTOFF = 1.0
+LOGIT_CUTOFF = 0.5
 # If set to None, all files will be written, otherwise will stop after this number of files.
 MAX_COUNT: Optional[int] = 2000
 
