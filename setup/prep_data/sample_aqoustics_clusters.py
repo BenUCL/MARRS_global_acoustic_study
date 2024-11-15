@@ -3,7 +3,7 @@ import random
 import shutil
 from pathlib import Path
 
-COUNTRY = "australia"
+COUNTRY = "indonesia"
 COUNT_PER_CLUSTER = 10
 
 base_dir = os.getenv('BASE_DIR')
