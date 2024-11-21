@@ -1,0 +1,8 @@
+1. Install R and R Studio
+2. Install required libraries:
+sudo apt update
+sudo apt install build-essential liblapack-dev libblas-dev gfortran libnlopt-dev
+3. Install lme4:
+install.packages("lme4", repos = "http://cran.rstudio.com/")
+4. Verify install:
+library(lme4)
