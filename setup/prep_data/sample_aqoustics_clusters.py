@@ -43,5 +43,5 @@ def select_and_copy_files(src_dir: str, dest_dir: str, num_files: int = COUNT_PE
                 print(f"Copied {file} to {dest_file_path}")
 
 
-# Run the function
-select_and_copy_files(clusters_dir, output_dir)
+if __name__ == "__main__":
+    select_and_copy_files(clusters_dir, output_dir)

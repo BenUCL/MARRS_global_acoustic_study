@@ -10,4 +10,5 @@ def rename_files_in_directory(directory: str) -> None:
                 os.rename(os.path.join(root, file), os.path.join(root, new_name))
                 print(f'Renamed: {file} to {new_name}')
 
-rename_files_in_directory(directory)
+if __name__ == "__main__":
+    rename_files_in_directory(directory)
