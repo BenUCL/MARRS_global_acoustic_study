@@ -3,14 +3,14 @@ import random
 import shutil
 from pathlib import Path
 
-COUNTRY = "indonesia"
+COUNTRY = "mexico"
 COUNT_PER_CLUSTER = 10
 
 base_dir = os.getenv('BASE_DIR')
 if not base_dir:
     raise ValueError("BASE_DIR environment variable is not set.")
 
-# set src_directory to base + country
+# Set paths
 parent_dir= os.path.join(base_dir, 'marrs_acoustics/aqoustics/' + COUNTRY)
 clusters_dir = os.path.join(parent_dir, COUNTRY + "_clusters")
 output_dir = os.path.join(parent_dir, "for_review")
