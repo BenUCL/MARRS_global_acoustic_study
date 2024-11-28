@@ -1,3 +1,5 @@
+""""Renames the files in the given hydromoth directories based on the site mapping."""
+
 import os
 from typing import List, Tuple
 
