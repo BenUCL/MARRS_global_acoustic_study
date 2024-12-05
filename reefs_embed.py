@@ -18,7 +18,7 @@ from chirp import audio_utils
 from chirp.inference import colab_utils, embed_lib, tf_examples
 
 # Set dataset to embed
-COUNTRY = 'maldives'
+COUNTRY = 'maldives'  
 
 # some colab thing, perhaps remove
 colab_utils.initialize(use_tf_gpu=True, disable_warnings=True)
