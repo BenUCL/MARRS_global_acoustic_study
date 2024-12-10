@@ -17,12 +17,12 @@ from tqdm import tqdm
 from typing import Optional
 
 # Only write out files where logits are equal to above this score
-TARGET_COUNTRY = 'australia'
-TARGET_SOUND = 'huff'
+TARGET_COUNTRY = 'maldives'
+TARGET_SOUND = 'grunt'
 # Only samples with a logit score above the value set below will be written. Set to 0 to write all samples. 
-LOGIT_CUTOFF = 0.5
+LOGIT_CUTOFF = 1.0
 # If set to None, all files will be written, otherwise will stop after this number of files.
-MAX_COUNT: Optional[int] = 2000
+MAX_COUNT: Optional[int] = 5000
 
 
 # Set base dir for filepaths
