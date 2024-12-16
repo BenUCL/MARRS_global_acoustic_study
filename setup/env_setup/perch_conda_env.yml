@@ -1,6 +1,6 @@
 #install with: conda env create -f perch_conda_env.yml
 
-name: perch_conda_env_ again
+name: perch_conda_env
 channels:
   - defaults
   - conda-forge
