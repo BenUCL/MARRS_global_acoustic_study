@@ -64,7 +64,7 @@ cd /marrs_acoustics/code
 poetry install
 ```
 
-If you receive a message indicating that the lock file has been edited and needs updating, run the following command and then retry the Poetry installation:
+Now update the lock file, this can take several minutes to resolve all the dependancies. Then we run install, this will use poetry to install all the remaining dependancies in the conda env.
 
 ```bash
 poetry lock
