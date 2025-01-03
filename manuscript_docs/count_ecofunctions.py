@@ -4,11 +4,12 @@ Combine inference CSV data by country, treatment, site, and date into a single C
 
 Steps:
 1. For each country, load its "raw_file_list.csv" (full set of possible recordings).
-   - Parse each filename to extract site, date (with time offset), and treatment.
+   - Parse each filename to extract site, date (no offset adjustment now), and treatment.
    - Collect unique combinations of (country, site, date, treatment).
-   - Count how many files per site–date combo, exclude any with <90% of expected count.
+   - Count how many files per site–date combo, exclude any with <90% of expected count
+     (using duty_cycle).
 2. Load the inference CSV in the agile_outputs folder for each country (if it exists).
-   - Parse filenames in the same way (site, date with offset, treatment).
+   - Parse filenames in the same way (site, date, treatment).
    - Group by (country, site, date, treatment), count how many inferences per group.
    - Multiply the count by the duty_cycle for that country.
 3. Perform a left-merge of the raw_file_list combos with the inference counts.
@@ -20,22 +21,21 @@ Steps:
 import os
 import logging
 import pandas as pd
-from datetime import datetime, timedelta
 
 # Global variables
-SOUND = "scrape"
+SOUND = "snaps"
 LOGIT_CUTOFF = 1.0
 
 # If a date has < the COVERAGE_THRESHOLD * expected_daily recordings, exclude it
 FILE_COVERAGE = 0.9
 
-# Dictionary holding time offsets (hrs) and duty cycles
+# Dictionary holding duty cycles (offset no longer needed).
 COUNTRY_CONFIG = {
-  "australia": {"offset": -10, "duty_cycle": 4},
-  "kenya": {"offset": -3, "duty_cycle": 4},
-  "indonesia": {"offset": 0,  "duty_cycle": 2},
-  "maldives": {"offset": +5, "duty_cycle": 4},
-  "mexico": {"offset": +7, "duty_cycle": 4}
+  "australia": {"duty_cycle": 4},
+  "kenya": {"duty_cycle": 4},
+  "indonesia": {"duty_cycle": 2},
+  "maldives": {"duty_cycle": 4},
+  "mexico": {"duty_cycle": 4}
 }
 COUNTRIES = list(COUNTRY_CONFIG.keys())
 
@@ -78,17 +78,12 @@ def parse_site(filename_part: str) -> str:
   parts = filename_part.split("_")
   return parts[1] if len(parts) > 1 else "unknown"
 
-def parse_date(filename_part: str, country: str) -> str:
+def parse_date(filename_part: str) -> str:
   """
-  Parse date/time from filename, apply the offset, return date in YYYYMMDD format.
-  E.g. 'ind_D2_20220830_130600.WAV' -> '20220830_130600'
+  Parse date from the filename (no offset).
+  E.g. 'ind_D2_20220830_130600.WAV' -> '20220830'
   """
-  dt_str = filename_part[7:7+15]  # '20220830_130600'
-  dt_obj = datetime.strptime(dt_str, "%Y%m%d_%H%M%S")
-
-  offset_hrs = COUNTRY_CONFIG[country]["offset"]
-  corrected_dt = dt_obj + timedelta(hours=offset_hrs)
-  return corrected_dt.strftime("%Y%m%d")
+  return filename_part[7:7+8]  # '20220830'
 
 def get_expected_daily_recordings(duty_cycle: int) -> int:
   """
@@ -124,13 +119,11 @@ def load_raw_file_list(country: str) -> pd.DataFrame:
 
     treatment = parse_treatment(filename_part)
     site = parse_site(filename_part)
-    date_str = parse_date(filename_part, country)
+    date_str = parse_date(filename_part)
 
     rows.append((country, site, date_str, treatment))
 
-  # Don't drop duplicates yet, keep one row per file
   df_out = pd.DataFrame(rows, columns=["country", "site", "date", "treatment"])
-
   # Count how many files (rows) per site–date
   df_counts = df_out.groupby(["site", "date"]).size().reset_index(name="n_files")
 
@@ -151,14 +144,12 @@ def load_raw_file_list(country: str) -> pd.DataFrame:
   df_counts = df_counts[df_counts["n_files"] >= coverage_threshold]
 
   # Merge back so only site–date combos above coverage remain
-  df_valid = pd.merge(df_out, df_counts[["site", "date"]], on=["site", "date"], how="inner")
-
-  # Now if you want unique site–date–treatment combos in the final result,
-  # you can drop duplicates if needed. For counting coverage, we needed them all.
+  df_valid = pd.merge(
+    df_out, df_counts[["site", "date"]], on=["site", "date"], how="inner"
+  )
   df_valid.drop_duplicates(inplace=True)
 
   return df_valid
-
 
 def load_inference_counts(country: str, sound: str, logit_cutoff: float) -> pd.DataFrame:
   """
@@ -179,7 +170,7 @@ def load_inference_counts(country: str, sound: str, logit_cutoff: float) -> pd.D
     return pd.DataFrame(columns=["country", "site", "date", "treatment", "count"])
 
   df_infer = pd.read_csv(csv_path)
-  # Filter out rows with logit < 1.0, BEWARE OF LEADING SPACE IN ' logit'
+  # Filter out rows with logit < logit_cutoff, BEWARE OF LEADING SPACE
   df_infer = df_infer[df_infer[" logit"] >= logit_cutoff]
 
   rows = []
@@ -189,7 +180,7 @@ def load_inference_counts(country: str, sound: str, logit_cutoff: float) -> pd.D
 
     treatment = parse_treatment(filename_part)
     site = parse_site(filename_part)
-    date_str = parse_date(filename_part, country)
+    date_str = parse_date(filename_part)
 
     rows.append((country, site, date_str, treatment))
 
@@ -205,7 +196,6 @@ def load_inference_counts(country: str, sound: str, logit_cutoff: float) -> pd.D
 
   return df_counts
 
-
 def process_country(country: str, sound: str, logit_cutoff: float) -> pd.DataFrame:
   """
   1) Load raw_file_list combos -> (country, site, date, treatment).
@@ -215,7 +205,6 @@ def process_country(country: str, sound: str, logit_cutoff: float) -> pd.DataFra
   df_raw_combos = load_raw_file_list(country)
   df_infer_counts = load_inference_counts(country, sound, logit_cutoff)
 
-  # Merge
   df_merged = pd.merge(
     df_raw_combos,
     df_infer_counts,
@@ -239,7 +228,7 @@ def main() -> None:
     df_country = process_country(country, SOUND, LOGIT_CUTOFF)
     combined_df = pd.concat([combined_df, df_country], ignore_index=True)
   
-  # sort the order into something sensible and write csv
+  # Sort and write CSV
   combined_df.sort_values(["country", "treatment", "site", "date"], inplace=True)
   combined_df.to_csv(OUTPUT_PATH, index=False)
   logging.info(f"Saved combined counts to {OUTPUT_PATH}")

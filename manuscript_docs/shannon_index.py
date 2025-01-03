@@ -7,7 +7,7 @@ Steps:
    - Exclude any date that doesn't meet the coverage threshold (<90% of expected).
    - We keep the final combos: country, site, date, treatment.
 2. In agile_outputs, for each subfolder (assume subfolder name is 'sound'), find sound_inference.csv:
-   - Parse rows with logit >= 1.0, extract site/date/treatment (with offset).
+   - Parse rows with logit >= 1.0, extract site/date/treatment (no offset needed now).
    - Count how many inference hits for each (country, site, date, treatment, sound).
 3. Merge all sounds for that date/site/treatment, so we have counts for each sound type.
 4. Compute the Shannon index:
@@ -20,19 +20,19 @@ import os
 import logging
 import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
+from datetime import datetime
 
-# Reuse your existing config from combine_counts (or define them here):
+# Reuse your existing config, but we no longer need offsets in COUNTRY_CONFIG
 BASE_DIR = os.getenv("BASE_DIR")
 if not BASE_DIR:
   raise ValueError("BASE_DIR environment variable is not set.")
 
 COUNTRY_CONFIG = {
-  "australia": {"offset": -10, "duty_cycle": 4},
-  "kenya": {"offset": -3, "duty_cycle": 4},
-  "indonesia": {"offset": 0,  "duty_cycle": 2},
-  "maldives": {"offset": +5, "duty_cycle": 4},
-  "mexico": {"offset": +7, "duty_cycle": 4}
+  "australia": {"duty_cycle": 4},
+  "kenya": {"duty_cycle": 4},
+  "indonesia": {"duty_cycle": 2},
+  "maldives": {"duty_cycle": 4},
+  "mexico": {"duty_cycle": 4}
 }
 
 LOGIT_CUTOFF = 1.0
@@ -67,22 +67,12 @@ def parse_site(filename_part: str) -> str:
   parts = filename_part.split("_")
   return parts[1] if len(parts) > 1 else "unknown"
 
-def parse_filename_datetime(filename_part: str, country: str) -> datetime:
+def parse_date(filename_part: str) -> str:
   """
-  Parse the full datetime (YYYYMMDD_HHMMSS) from the filename,
-  then apply the offset from COUNTRY_CONFIG.
+  Return just YYYYMMDD from the filename (no offset).
+  e.g. 'ind_D2_20220830_130600.WAV' -> '20220830'
   """
-  dt_str = filename_part[7:7+15]  # '20220830_130600'
-  dt_obj = datetime.strptime(dt_str, "%Y%m%d_%H%M%S")
-  offset_hrs = COUNTRY_CONFIG[country]["offset"]
-  return dt_obj + timedelta(hours=offset_hrs)
-
-def parse_date(filename_part: str, country: str) -> str:
-  """
-  Return just YYYYMMDD from the offset-corrected datetime.
-  """
-  dt_corrected = parse_filename_datetime(filename_part, country)
-  return dt_corrected.strftime("%Y%m%d")
+  return filename_part[7:15]  # '20220830'
 
 def get_expected_daily_recordings(duty_cycle: int) -> int:
   """
@@ -112,12 +102,13 @@ def load_raw_file_list(country: str) -> pd.DataFrame:
     filename_full = row_csv["filename"]
     filename_part = filename_full.split("/", 1)[-1] if "/" in filename_full else filename_full
 
-    date_str = parse_date(filename_part, country)
+    date_str = parse_date(filename_part)
     site = parse_site(filename_part)
     treatment = parse_treatment(filename_part)
     rows.append((country, site, date_str, treatment))
 
   df_out = pd.DataFrame(rows, columns=["country", "site", "date", "treatment"])
+
   # Coverage is daily, so count how many files per site–date
   df_counts = df_out.groupby(["site", "date"]).size().reset_index(name="n_files")
 
@@ -150,7 +141,7 @@ def gather_sound_counts(country: str, logit_cutoff: float = 1.0) -> pd.DataFrame
   """
   For each subfolder (sound) in agile_outputs, if <sound>_inference.csv exists:
     - read it, filter logit >= cutoff
-    - parse site/date/treatment
+    - parse site/date/treatment (no offset)
     - group by (country, site, date, treatment, sound) => sum how many hits
   Return a DataFrame with [country, site, date, treatment, sound, count].
   """
@@ -178,8 +169,8 @@ def gather_sound_counts(country: str, logit_cutoff: float = 1.0) -> pd.DataFrame
 
     logging.info(f"Using sound '{sound_folder}' for {country}.")
     df_infer = pd.read_csv(csv_path)
+
     # Filter by logit
-    # Adjust column name if needed: " logit" vs "logit"
     col_logit = " logit" if " logit" in df_infer.columns else "logit"
     df_infer = df_infer[df_infer[col_logit] >= logit_cutoff]
 
@@ -189,7 +180,7 @@ def gather_sound_counts(country: str, logit_cutoff: float = 1.0) -> pd.DataFrame
       filename_full = row_inf["filename"]
       filename_part = filename_full.split("/", 1)[-1] if "/" in filename_full else filename_full
 
-      date_str = parse_date(filename_part, country)
+      date_str = parse_date(filename_part)
       site = parse_site(filename_part)
       treatment = parse_treatment(filename_part)
 
@@ -213,7 +204,7 @@ def gather_sound_counts(country: str, logit_cutoff: float = 1.0) -> pd.DataFrame
 def compute_shannon(df_group: pd.DataFrame) -> float:
   """
   Given a subset of data for one group (site, date, etc.),
-  compute Shannon = - Σ p_i ln(p_i), where p_i = count_i / total.
+  compute Shannon = -Σ (p_i * ln(p_i)), where p_i = count_i / total.
   """
   total = df_group["count"].sum()
   if total == 0:

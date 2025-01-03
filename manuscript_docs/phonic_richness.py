@@ -38,7 +38,7 @@ from datetime import datetime, timedelta
 # We'll reuse many of the functions and variables from 'combine_counts.py'.
 # For example, parse_date, parse_site, parse_treatment, etc.
 # Make sure this script is in the same folder so the import works.
-from combine_counts import (
+from count_ecofunctions import (
     BASE_DIR,
     COUNTRY_CONFIG,
     FILE_COVERAGE,
@@ -115,7 +115,7 @@ def gather_sound_presence(country: str, logit_cutoff: float = 1.0) -> pd.DataFra
 
       treatment = parse_treatment(filename_part)
       site = parse_site(filename_part)
-      date_str = parse_date(filename_part, country)
+      date_str = parse_date(filename_part)
 
       # Each row => this (sound_folder) is present at site/date/treatment
       presence_rows.append((country, site, date_str, treatment, sound_folder))
