@@ -85,6 +85,21 @@ def parse_date(filename_part: str) -> str:
   """
   return filename_part[7:7+8]  # '20220830'
 
+from datetime import datetime
+
+def parse_date_time(filename_part: str) -> datetime:
+  """
+  Given a filename like 'ind_D2_20220830_130600.WAV',
+  parse the substring '20220830_130600' into a Python datetime object.
+
+  Example:
+    'ind_D2_20220830_130600.WAV' -> datetime(2022, 8, 30, 13, 6, 0)
+  """
+  # The date/time part starts at index 7 and spans 15 characters, e.g. '20220830_130600'
+  dt_str = filename_part[7:7+15]  # '20220830_130600'
+  return datetime.strptime(dt_str, "%Y%m%d_%H%M%S")
+
+
 def get_expected_daily_recordings(duty_cycle: int) -> int:
   """
   Return how many files we expect in one full day for a given duty cycle.
