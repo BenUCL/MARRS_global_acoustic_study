@@ -46,7 +46,7 @@ if not BASE_DIR:
 OUTPUT_PATH = os.path.join(
   BASE_DIR,
   "marrs_acoustics/data/results/functions",
-  f"{SOUND}_combined_count.csv"
+  f"{SOUND}_count.csv"
 )
 
 def parse_treatment(filename_part: str) -> str:
