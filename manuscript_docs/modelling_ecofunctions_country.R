@@ -14,7 +14,7 @@ if (base_dir == "") {
 eco_function <- "snaps_count"
 
 # Validate eco_function
-valid_functions <- c("snap_count", "graze_count", "phonic_richness", "settlement_cuescape")
+valid_functions <- c("snaps_count", "graze_count", "phonic_richness", "settlement_cuescape")
 if (!(eco_function %in% valid_functions)) {
   stop("Invalid eco_function. Please set it to one of: ", paste(valid_functions, collapse = ", "))
 }
@@ -31,7 +31,7 @@ head(data)
 countries <- unique(data$country)
 for (country in countries) {
   country_data <- data[data$country == country, ]
-  country_output_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/histograms_by_country", paste0(eco_function, "_", country, ".png"))
+  summary_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/summary_outputs", paste0(eco_function, "_", country, "_summary.txt"))
   print(paste("Saving histogram for country:", country, "to:", country_output_path))
   
   png(country_output_path)
@@ -48,41 +48,64 @@ for (country in countries) {
 for (country in countries) {
   country_data <- data[data$country == country, ]
   
-  # Check if count is constant (this will skip kenya graze, which is all 0)
+  # Check if count is constant
   if (length(unique(country_data$count)) == 1) {
     print(paste("Skipping model for country:", country, "- Response is constant"))
     next
   }
   
-  # Fit the GLMM with random effects for site and date
+  # File path for saving summaries
+  summary_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/summary_outputs", paste0(eco_function, "_by_country_summary.txt"))
+  
+  print(paste("################ RE ONLY MODEL SUMMARY FOR COUNTRY:", country, "(", eco_function, ") ################"))
+  
+  # Fit the GLMM with random effects
   model <- glmer.nb(
     count ~ 1 + (1 | site) + (1 | date),
     data = country_data
   )
   
-  print(paste("Model summary for country:", country))
+  # Save summary to file
+  sink(summary_path, append = TRUE) # Start appending to the file
+  cat(paste0("################ RE ONLY MODEL SUMMARY FOR COUNTRY: ", country, " (", eco_function, ") ################\n"))
+  print(summary(model)) # Save the model summary to the file
+  sink() # Stop redirecting output
+  
+  # Print the summary to the terminal
   print(summary(model))
 }
+
 
 
 # Fit and summarise models for each country with treatment as a fixed effect
 for (country in countries) {
   country_data <- data[data$country == country, ]
   
-  # Check if count is constant (this will skip kenya graze, which is all 0)
+  # Check if count is constant
   if (length(unique(country_data$count)) == 1) {
     print(paste("Skipping model for country:", country, "- Response is constant"))
     next
   }
   
-  # Fit the GLMM with treatment as a fixed effect and random effects for site and date
+  # File path for saving summaries
+  summary_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/summary_outputs", paste0(eco_function, "_by_country_summary.txt"))
+  
+  print(paste("################ FULL MODEL SUMMARY FOR COUNTRY:", country, "(", eco_function, ") ################"))
+  
+  # Fit the GLMM with treatment as a fixed effect
   model <- glmer.nb(
     count ~ treatment + (1 | site) + (1 | date),
     data = country_data
   )
   
-  # Print a summary of the model
-  print(paste("Model summary for country:", country))
+  # Save summary to file
+  sink(summary_path, append = TRUE) # Start appending to the file
+  cat(paste0("\n################ FULL MODEL SUMMARY FOR COUNTRY: ", country, " (", eco_function, ") ################\n"))
+  print(summary(model)) # Save the model summary to the file
+  sink() # Stop redirecting output
+  
+  # Print the summary to the terminal
   print(summary(model))
 }
+
 

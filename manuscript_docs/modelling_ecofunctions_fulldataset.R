@@ -14,7 +14,7 @@ if (base_dir == "") {
 eco_function <- "snaps_count"
 
 # Validate eco_function
-valid_functions <- c("snap_count", "graze_count", "phonic_richness", "settlement_cuescape")
+valid_functions <- c("snaps_count", "graze_count", "phonic_richness", "settlement_cuescape")
 if (!(eco_function %in% valid_functions)) {
   stop("Invalid eco_function. Please set it to one of: ", paste(valid_functions, collapse = ", "))
 }
@@ -39,7 +39,6 @@ hist(data$count,
      border = "black")
 dev.off() 
 
-
 # Fit the GLMM model
 # Negative Poisson binomial error structure
 model <- glmer.nb(
@@ -50,8 +49,14 @@ model <- glmer.nb(
   data = data
 )
 
-# Summary of the model
+# Save Summary of the RE-Only Model in a readable format
+summary_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/summary_outputs", paste0(eco_function, "_full_dataset.txt"))
+sink(summary_path) # Redirect console output to file
+cat(paste0("################ RE ONLY MODEL SUMMARY (", eco_function, ") ################\n"))
+print(summary(model)) # Print summary to file
+sink() # Stop redirecting
 summary(model)
+
 
 # Fit the GLMM model with treatment as a fixed effect
 model_treatment <- glmer.nb(
@@ -63,6 +68,11 @@ model_treatment <- glmer.nb(
 )
 
 # Summary of the new model
+# Append Summary of the Model with Treatment in a readable format
+sink(summary_path, append = TRUE) # Redirect console output to file (append mode)
+cat(paste0("\n################ FULL MODEL SUMMARY (", eco_function, ") ################\n"))
+print(summary(model_treatment)) # Print summary to file
+sink() # Stop redirecting
 summary(model_treatment)
 
 
