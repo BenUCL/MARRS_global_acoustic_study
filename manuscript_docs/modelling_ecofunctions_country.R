@@ -31,9 +31,14 @@ head(data)
 countries <- unique(data$country)
 for (country in countries) {
   country_data <- data[data$country == country, ]
-  summary_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/summary_outputs", paste0(eco_function, "_", country, "_summary.txt"))
+  
+  # Construct the file path for saving the histogram
+  country_output_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/histograms_by_country", paste0(eco_function, "_", country, ".png"))
+  
+  # Print message about saving the histogram
   print(paste("Saving histogram for country:", country, "to:", country_output_path))
   
+  # Save the histogram
   png(country_output_path)
   hist_title <- paste("Histogram of", eco_function, "in", country)
   hist(country_data$count, 
@@ -43,6 +48,7 @@ for (country in countries) {
        border = "black")
   dev.off()
 }
+
 
 # Fit and summarise RANDOM EFFECT ONLY models for each country
 for (country in countries) {
@@ -74,8 +80,6 @@ for (country in countries) {
   # Print the summary to the terminal
   print(summary(model))
 }
-
-
 
 # Fit and summarise models for each country with treatment as a fixed effect
 for (country in countries) {
