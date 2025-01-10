@@ -1,7 +1,5 @@
-# Global install of lme4 if not present already
+# Global install of required libraries if not present
 if (!require("lme4")) install.packages("lme4", repos = "http://cran.rstudio.com/")
-
-# Imports
 library(lme4)
 
 # Check if the environment variable is set
@@ -10,7 +8,7 @@ if (base_dir == "") {
   stop("BASE_DIR is not set. Please set it in your environment variables.")
 }
 
-# Set ecological function to 'phonic_richness'
+# Set ecological function (choose one of the following: 'graze_count', 'snaps_count', 'phonic_richness', '{eco_function}')
 eco_function <- "phonic_richness"
 
 # Validate eco_function
@@ -27,10 +25,9 @@ print(csv_path)
 data <- read.csv(csv_path)
 head(data)
 
-# Plot and save histogram
-output_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats", paste0(eco_function, ".png"))
-print(paste("Saving histogram to:", output_path))
-png(output_path) 
+# Plot and save histogram for raw data
+hist_output_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/histograms", paste0(eco_function, ".png"))
+png(hist_output_path)
 hist_title <- paste("Histogram of", eco_function)
 hist(data$count, 
      main = hist_title, 
@@ -40,132 +37,93 @@ hist(data$count,
 dev.off()
 
 ###### Start fitting models! ######
-
 # Fit RE-Only Model
 re_only_model <- glmer.nb(
   count ~ 1 + 
     (1 | country) + 
     (1 | country:site) + 
-    (1 | country:date),
+    (1 | country:date), 
   data = data
 )
-
-# Save RE-Only Model Summary
-summary_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/summary_outputs", paste0(eco_function, "_model_summary.txt"))
-sink(summary_path) # Redirect console output to file
-cat(paste0("################ RE-ONLY MODEL SUMMARY (", eco_function, ") ################\n"))
-print(summary(re_only_model)) # Print summary to file
-sink() # Stop redirecting
 
 # Fit Model with Treatment
 treatment_model <- glmer.nb(
   count ~ treatment + 
     (1 | country) + 
     (1 | country:site) + 
-    (1 | country:date),
+    (1 | country:date), 
   data = data
 )
 
-# Append Treatment Model Summary
-sink(summary_path, append = TRUE) # Redirect console output to file (append mode)
-cat(paste0("\n################ FULL MODEL SUMMARY (", eco_function, ") ################\n"))
-print(summary(treatment_model)) # Print summary to file
-sink() # Stop redirecting
+# Save all summaries to a single text file
+summary_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/summary_outputs", paste0(eco_function, "_summary.txt"))
+sink(summary_path)
+cat("################ RAW DATA MODELS ################\n\n")
+cat("### RE-Only Model Summary ###\n")
+print(summary(re_only_model))
 
-# Print summaries to console
-summary(re_only_model)
-summary(treatment_model)
+cat("\n### Full Model Summary ###\n")
+print(summary(treatment_model))
+sink()
 
-###### Now inspect the model fit through checking residuals. ######
-
-# Extract residuals and save diagnostics for the Treatment Model
+###### Inspect Model Fit ######
+# Residual diagnostics for Treatment Model
 treatment_residuals <- residuals(treatment_model, type = "pearson")
 data$treatment_residuals <- treatment_residuals
 
-# Identify extreme residuals for Treatment Model
+# Identify extreme residuals
 treatment_extreme <- data[abs(treatment_residuals) > 3, ]
-extreme_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", paste0(eco_function, "_fe_outliers.txt"))
+extreme_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_outliers.txt"))
 write.csv(treatment_extreme, extreme_path, row.names = FALSE)
-cat(paste("Saved Treatment Model outliers to:", extreme_path, "\n"))
 
-# Plot residuals 
-png(file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", paste0(eco_function, "_fe_residuals_plot.png")))
-hist(treatment_residuals, main = "Histogram of Treatment Model Residuals", xlab = "Residuals", col = "skyblue", border = "black")
+# QQ Plot
+qq_plot_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_qq.png"))
+png(qq_plot_path)
+qqnorm(treatment_residuals, main = "Q-Q Plot")
+qqline(treatment_residuals, col = "red")
 dev.off()
 
-# Plot residuals vs fitted
-png(file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", paste0(eco_function, "_fe_residuals_vs_fitted.png")))
-plot(fitted(treatment_model), residuals(treatment_model), main = "Residuals vs Fitted", xlab = "Fitted Values", ylab = "Residuals", col = "blue")
-abline(h = 0, col = "red", lwd = 2)
+# Residuals vs Fitted
+res_vs_fit_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_residuals_vs_fitted.png"))
+png(res_vs_fit_path)
+plot(fitted(treatment_model), treatment_residuals, main = "Residuals vs Fitted", xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, col = "red")
 dev.off()
 
-# QQ plot
-png(file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", paste0(eco_function, "_fe_qq_plot.png")))
-qqnorm(residuals(treatment_model))
-qqline(residuals(treatment_model), col = "red")
-dev.off()
-
-
-###### Fit Models Without country:date ######
-# Fit RE-Only Model without country:date
-re_only_model_dropdate <- glmer.nb(
-  count ~ 1 + 
-    (1 | country) + 
-    (1 | country:site),
-  data = data
-)
-
-# Save RE-Only Model Without country:date Summary
-dropdate_summary_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/summary_outputs", paste0(eco_function, "_dropdate_model_summary.txt"))
-sink(dropdate_summary_path) # Redirect console output to file
-cat(paste0("################ RE-ONLY MODEL (dropdate) SUMMARY (", eco_function, ") ################\n"))
-print(summary(re_only_model_dropdate)) # Print summary to file
-sink() # Stop redirecting
-
-# Fit Full Model Without country:date
-treatment_model_dropdate <- glmer.nb(
+###### Alternate Model (Dropping Date Random Effect) ######
+alternate_model <- glmer.nb(
   count ~ treatment + 
     (1 | country) + 
-    (1 | country:site),
+    (1 | country:site), 
   data = data
 )
 
-# Append Full Model Without country:date Summary
-sink(dropdate_summary_path, append = TRUE) # Append to the output file
-cat(paste0("\n################ FULL MODEL (dropdate) SUMMARY (", eco_function, ") ################\n"))
-print(summary(treatment_model_dropdate)) # Print summary to file
-sink() # Stop redirecting
+# Append Alternate Model Summary
+sink(summary_path, append = TRUE)
+cat("\n################ ALTERNATE MODEL (NO DATE RANDOM EFFECT) ################\n\n")
+cat("### Alternate Model Summary ###\n")
+print(summary(alternate_model))
+sink()
 
-# Print summaries to console
-summary(re_only_model_dropdate)
-summary(treatment_model_dropdate)
+# Residual diagnostics for Alternate Model
+alternate_residuals <- residuals(alternate_model, type = "pearson")
+data$alternate_residuals <- alternate_residuals
 
-###### Residual Diagnostics for dropdate Models ######
+# Identify extreme residuals for Alternate Model
+alternate_extreme <- data[abs(alternate_residuals) > 3, ]
+alternate_extreme_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_dropdate_outliers.txt"))
+write.csv(alternate_extreme, alternate_extreme_path, row.names = FALSE)
 
-# Extract residuals and save diagnostics for Treatment Model Without country:date
-dropdate_residuals <- residuals(treatment_model_dropdate, type = "pearson")
-data$dropdate_residuals <- dropdate_residuals
-
-# Identify extreme residuals for Treatment Model Without country:date
-dropdate_extreme <- data[abs(dropdate_residuals) > 3, ]
-dropdate_extreme_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", paste0(eco_function, "_dropdate_fe_outliers.txt"))
-write.csv(dropdate_extreme, dropdate_extreme_path, row.names = FALSE)
-cat(paste("Saved Treatment Model Without country:date outliers to:", dropdate_extreme_path, "\n"))
-
-# Plot residuals for Treatment Model Without country:date
-png(file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", paste0(eco_function, "_dropdate_fe_residuals_plot.png")))
-hist(dropdate_residuals, main = "Histogram of Treatment Model Residuals (dropdate)", xlab = "Residuals", col = "skyblue", border = "black")
+# QQ Plot for Alternate Model
+alternate_qq_plot_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_dropdate_qq.png"))
+png(alternate_qq_plot_path)
+qqnorm(alternate_residuals, main = "Q-Q Plot (drop date model)")
+qqline(alternate_residuals, col = "red")
 dev.off()
 
-# Plot residuals vs fitted for Treatment Model Without country:date
-png(file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", paste0(eco_function, "_dropdate_fe_residuals_vs_fitted.png")))
-plot(fitted(treatment_model_dropdate), residuals(treatment_model_dropdate), main = "Residuals vs Fitted (dropdate)", xlab = "Fitted Values", ylab = "Residuals", col = "blue")
-abline(h = 0, col = "red", lwd = 2)
+# Residuals vs Fitted for Alternate Model
+alternate_res_vs_fit_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_dropdate_residuals_vs_fitted.png"))
+png(alternate_res_vs_fit_path)
+plot(fitted(alternate_model), alternate_residuals, main = "Residuals vs Fitted (drop date model)", xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, col = "red")
 dev.off()
-
-# QQ plot for Treatment Model Without country:date
-png(file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", paste0(eco_function, "_dropdate_fe_qq_plot.png")))
-qqnorm(residuals(treatment_model_dropdate), main = "Q-Q Plot of Treatment Model Residuals (dropdate)")
-qqline(residuals(treatment_model_dropdate), col = "red")
-dev.off()
-
