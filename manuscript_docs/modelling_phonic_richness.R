@@ -56,7 +56,7 @@ treatment_model <- glmer.nb(
 )
 
 # Save all summaries to a single text file
-summary_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/summary_outputs", paste0(eco_function, "_summary"))
+summary_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/summary_outputs", paste0(eco_function, "_summary.txt"))
 sink(summary_path)
 cat("################ RAW DATA MODELS ################\n\n")
 cat("### RE-Only Model Summary ###\n")

@@ -60,7 +60,7 @@ re_only_model <- glmer.nb(
 )
 
 # Save RE-Only Model Summary
-summary_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/summary_outputs", paste0(eco_function, "_summary"))
+summary_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/summary_outputs", paste0(eco_function, "_summary.txt"))
 sink(summary_path) # Redirect console output to file
 cat(paste0("################ RE-ONLY MODEL SUMMARY (", eco_function, ") ################\n"))
 print(summary(re_only_model)) # Print summary to file
@@ -140,7 +140,7 @@ log_residuals <- residuals(log_lmm_model)
 log_fitted <- fitted(log_lmm_model)
 
 # Save residuals for outliers values inspection
-log_outliers_path <- file.path(outliers_dir, paste0(eco_function, "_transformed_fe_outliers_log.txt"))
+log_outliers_path <- file.path(outliers_dir, paste0(eco_function, "_transformed_fe_outliers_log"))
 write.csv(data[abs(log_residuals) > 3, ], log_outliers_path, row.names = FALSE)
 cat(paste("Saved Log-Transformed Model outliers to:", log_outliers_path, "\n"))
 
@@ -157,3 +157,48 @@ png(log_qq_plot_path)
 qqnorm(log_residuals, main = "Q-Q Plot of Log-Transformed Model Residuals")
 qqline(log_residuals, col = "red")
 dev.off()
+
+###### Fit and Evaluate Country & Treatment Interaction ######
+# Fit the interaction model
+interaction_model <- glmer.nb(
+  count ~ treatment * country + 
+    (1 | country) + 
+    (1 | country:site) + 
+    (1 | country:date),
+  data = data
+)
+
+# Append Interaction Model Summary to the summary file
+sink(summary_path, append = TRUE) # Redirect console output to file (append mode)
+cat(paste0("\n################ COUNTRY & TREATMENT INTERACTION SUMMARY (", eco_function, ") ################\n"))
+print(summary(interaction_model)) # Print summary to file
+sink() # Stop redirecting
+
+# Extract residuals and fitted values for the interaction model
+interaction_residuals <- residuals(interaction_model, type = "pearson")
+interaction_fitted <- fitted(interaction_model)
+data$interaction_residuals <- interaction_residuals
+
+# Save outliers based on residuals for the interaction model
+interaction_outliers_path <- file.path(outliers_dir, paste0(eco_function, "_interaction_fe_outliers.txt"))
+write.csv(data[abs(interaction_residuals) > 3, ], interaction_outliers_path, row.names = FALSE)
+cat(paste("Saved Interaction Model outliers to:", interaction_outliers_path, "\n"))
+
+# Plot residuals vs fitted values for the interaction model
+interaction_residuals_vs_fitted_path <- file.path(outliers_dir, paste0(eco_function, "_residuals_vs_fitted_interaction.png"))
+png(interaction_residuals_vs_fitted_path)
+plot(interaction_fitted, interaction_residuals, 
+     main = "Residuals vs Fitted (Interaction Model)", 
+     xlab = "Fitted Values", 
+     ylab = "Residuals", 
+     col = "blue")
+abline(h = 0, col = "red", lwd = 2)
+dev.off()
+
+# Plot Q-Q plot of residuals for the interaction model
+interaction_qq_plot_path <- file.path(outliers_dir, paste0(eco_function, "_qq_plot_interaction.png"))
+png(interaction_qq_plot_path)
+qqnorm(interaction_residuals, main = "Q-Q Plot of Interaction Model Residuals")
+qqline(interaction_residuals, col = "red")
+dev.off()
+

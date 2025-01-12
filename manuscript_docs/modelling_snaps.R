@@ -60,7 +60,7 @@ re_only_model <- glmer.nb(
 )
 
 # Save RE-Only Model Summary
-summary_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/summary_outputs", paste0(eco_function, "_summary"))
+summary_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/summary_outputs", paste0(eco_function, "_summary.txt"))
 sink(summary_path) # Redirect console output to file
 cat(paste0("################ RE-ONLY MODEL SUMMARY (", eco_function, ") ################\n"))
 print(summary(re_only_model)) # Print summary to file
