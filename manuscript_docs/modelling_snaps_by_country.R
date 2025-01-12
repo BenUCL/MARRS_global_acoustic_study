@@ -10,7 +10,7 @@ if (base_dir == "") {
   stop("BASE_DIR is not set. Please set it in your environment variables.")
 }
 
-# Set ecological function to 'graze_count'
+# Set ecological function to 'graze_count' or 'snaps_count'
 eco_function <- "snaps_count"
 
 # Validate eco_function
@@ -27,18 +27,28 @@ print(csv_path)
 data <- read.csv(csv_path)
 head(data)
 
+# Exclude Kenya for graze_count
+if (eco_function == "graze_count") {
+  data <- subset(data, country != "kenya")
+  print("Kenya excluded from analysis for graze_count.")
+}
+
 # Get unique countries
 countries <- unique(data$country)
 
 # Paths for outputs
-summary_dir <- "/home/bwilliams/ucl_projects/marrs_acoustics/data/results/functions/stats/summary_outputs/grazing_by_country"
-residual_dir <- "/home/bwilliams/ucl_projects/marrs_acoustics/data/results/functions/stats/model_inspection/grazing_by_country"
-histogram_dir <- "/home/bwilliams/ucl_projects/marrs_acoustics/data/results/functions/stats/histograms_by_country"
+summary_dir <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/summary_outputs")
+residual_dir <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_by_country"))
+histogram_dir <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/histograms/histograms_by_country", eco_function)
+summary_file <- file.path(summary_dir, paste0(eco_function, "_summary_by_country.txt"))
 
 # Ensure directories exist
 dir.create(summary_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(residual_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(histogram_dir, recursive = TRUE, showWarnings = FALSE)
+
+# Initialize summary file
+cat("", file = summary_file) # Empty the file if it already exists
 
 # Loop through each country
 for (cntry in countries) {
@@ -79,30 +89,25 @@ for (cntry in countries) {
     data = country_data
   )
   
-  # Save model summaries
-  summary_path <- file.path(summary_dir, paste0(eco_function, "_", cntry, "_summary.txt"))
-  sink(summary_path) # Redirect console output to file
-  cat(paste0("################ RE-ONLY MODEL SUMMARY (", cntry, ") ################\n"))
-  print(summary(re_only_model))
-  cat(paste0("\n################ FULL MODEL SUMMARY (", cntry, ") ################\n"))
-  print(summary(treatment_model))
-  sink() # Stop redirecting
+  # Append model summaries to a single file
+  cat(paste0("####################### COUNTRY: ", toupper(cntry), " #######################\n"),
+      file = summary_file, append = TRUE)
+  cat(paste0("################ RE-ONLY MODEL SUMMARY (", cntry, ") ################\n"),
+      file = summary_file, append = TRUE)
+  capture.output(print(summary(re_only_model)),
+                 file = summary_file, append = TRUE)
+  cat(paste0("\n################ FULL MODEL SUMMARY (", cntry, ") ################\n"),
+      file = summary_file, append = TRUE)
+  capture.output(print(summary(treatment_model)),
+                 file = summary_file, append = TRUE)
+  cat("\n\n", file = summary_file, append = TRUE)
   
   # Residual Diagnostics for Treatment Model
   treatment_residuals <- residuals(treatment_model, type = "pearson")
   
-  # Plot residual histogram
-  residual_hist_path <- file.path(residual_dir, paste0(eco_function, "_", cntry, "_residuals_plot.png"))
-  png(residual_hist_path)
-  hist(treatment_residuals, 
-       main = paste("Histogram of Residuals for", eco_function, "in", cntry), 
-       xlab = "Residuals", 
-       col = "skyblue", 
-       border = "black")
-  dev.off()
   
   # Plot residuals vs fitted
-  residual_vs_fitted_path <- file.path(residual_dir, paste0(eco_function, "_", cntry, "_residuals_vs_fitted.png"))
+  residual_vs_fitted_path <- file.path(residual_dir, paste0(cntry, "_residuals_vs_fitted.png"))
   png(residual_vs_fitted_path)
   plot(fitted(treatment_model), treatment_residuals, 
        main = paste("Residuals vs Fitted for", eco_function, "in", cntry), 
@@ -113,7 +118,7 @@ for (cntry in countries) {
   dev.off()
   
   # Q-Q plot
-  qq_plot_path <- file.path(residual_dir, paste0(eco_function, "_", cntry, "_qq_plot.png"))
+  qq_plot_path <- file.path(residual_dir, paste0(cntry, "_qq_plot.png"))
   png(qq_plot_path)
   qqnorm(treatment_residuals, 
          main = paste("Q-Q Plot of Residuals for", eco_function, "in", cntry))

@@ -56,7 +56,7 @@ treatment_model <- glmer.nb(
 )
 
 # Save all summaries to a single text file
-summary_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/summary_outputs", paste0(eco_function, "_summary.txt"))
+summary_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/summary_outputs", paste0(eco_function, "_summary"))
 sink(summary_path)
 cat("################ RAW DATA MODELS ################\n\n")
 cat("### RE-Only Model Summary ###\n")
@@ -71,10 +71,10 @@ sink()
 treatment_residuals <- residuals(treatment_model, type = "pearson")
 data$treatment_residuals <- treatment_residuals
 
-# Identify extreme residuals
-treatment_extreme <- data[abs(treatment_residuals) > 3, ]
-extreme_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_outliers.txt"))
-write.csv(treatment_extreme, extreme_path, row.names = FALSE)
+# Identify outliers residuals
+treatment_outliers <- data[abs(treatment_residuals) > 3, ]
+outliers_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_outliers"))
+write.csv(treatment_outliers, outliers_path, row.names = FALSE)
 
 # QQ Plot
 qq_plot_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_qq.png"))
@@ -109,10 +109,10 @@ sink()
 alternate_residuals <- residuals(alternate_model, type = "pearson")
 data$alternate_residuals <- alternate_residuals
 
-# Identify extreme residuals for Alternate Model
-alternate_extreme <- data[abs(alternate_residuals) > 3, ]
-alternate_extreme_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_dropdate_outliers.txt"))
-write.csv(alternate_extreme, alternate_extreme_path, row.names = FALSE)
+# Identify outliers residuals for Alternate Model
+alternate_outliers <- data[abs(alternate_residuals) > 3, ]
+alternate_outliers_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_dropdate_outliers"))
+write.csv(alternate_outliers, alternate_outliers_path, row.names = FALSE)
 
 # QQ Plot for Alternate Model
 alternate_qq_plot_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_dropdate_qq.png"))
@@ -127,3 +127,5 @@ png(alternate_res_vs_fit_path)
 plot(fitted(alternate_model), alternate_residuals, main = "Residuals vs Fitted (drop date model)", xlab = "Fitted Values", ylab = "Residuals")
 abline(h = 0, col = "red")
 dev.off()
+
+# No outliers in the PR residuals so we don't need to run a model with these excluded

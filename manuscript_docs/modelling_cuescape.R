@@ -72,10 +72,10 @@ sink()
 treatment_residuals <- residuals(treatment_model, type = "pearson")
 data$treatment_residuals <- treatment_residuals
 
-# Identify extreme residuals
-treatment_extreme <- data[abs(treatment_residuals) > 3, ]
-extreme_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_outliers.txt"))
-write.csv(treatment_extreme, extreme_path, row.names = FALSE)
+# Identify outliers residuals
+treatment_outliers <- data[abs(treatment_residuals) > 3, ]
+outliers_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_outliers"))
+write.csv(treatment_outliers, outliers_path, row.names = FALSE)
 
 # QQ Plot
 qq_plot_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_qq.png"))
@@ -133,9 +133,9 @@ sink()
 
 # Residual diagnostics for Log-Transformed Model
 log_residuals <- residuals(log_treatment_model)
-log_extreme <- data[abs(log_residuals) > 3, ]
-log_extreme_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_outliers_log.txt"))
-write.csv(log_extreme, log_extreme_path, row.names = FALSE)
+log_outliers <- data[abs(log_residuals) > 3, ]
+log_outliers_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_outliers_log"))
+write.csv(log_outliers, log_outliers_path, row.names = FALSE)
 
 # Log QQ Plot
 log_qq_plot_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_qq_log.png"))
@@ -148,5 +148,76 @@ dev.off()
 log_res_vs_fit_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_residuals_vs_fitted_log.png"))
 png(log_res_vs_fit_path)
 plot(fitted(log_treatment_model), log_residuals, main = "Residuals vs Fitted (Log-Transformed)", xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, col = "red")
+dev.off()
+
+########### Drop outliers and repeat ######################
+# Ensure the columns for joining are consistent
+# Load the extreme residuals (outliers) from the saved CSV file
+outliers_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_outliers.csv"))
+outliers <- read.csv(extreme_path)
+
+# Ensure the columns for joining are consistent
+outliers$key <- paste(outliers$country, outliers$site, outliers$date, sep = "_")
+data$key <- paste(data$country, data$site, data$date, sep = "_")
+
+# Filter data to exclude rows that match the outliers
+data_no_outliers <- data[!data$key %in% outliers$key, ]
+
+# Print the first few rows and number of rows of the filtered data
+cat("First few rows of filtered data:\n")
+print(head(data_no_outliers))
+cat("\nNumber of rows in filtered data: ", nrow(data_no_outliers), "\n")
+
+# Drop the key column to clean up
+data_no_outliers$key <- NULL
+data$key <- NULL
+
+# Proceed with the models as before
+# RE only
+re_drop_outliers <- glmer.nb(
+  count ~ offset(log(max_poss_count)) + 
+    (1 | country) + 
+    (1 | country:site) + 
+    (1 | country:date), 
+  data = data_no_outliers
+)
+
+# FE model
+fe_drop_outliers <- glmer.nb(
+  count ~ treatment + offset(log(max_poss_count)) + 
+    (1 | country) + 
+    (1 | country:site) + 
+    (1 | country:date), 
+  data = data_no_outliers
+)
+
+# Append Drop Outliers Model Summaries to the same summary file
+sink(summary_path, append = TRUE)
+cat("\n################ DROP OUTLIERS MODELS ################\n\n")
+
+cat("### Drop Outliers: Random Effect Model ###\n")
+print(summary(re_drop_outliers))
+
+cat("\n### Drop Outliers: Fixed Effect Model ###\n")
+print(summary(fe_drop_outliers))
+
+sink()  # Close the sink to return output to console
+
+# Residual diagnostics for models with drop outliers
+drop_outliers_residuals <- residuals(fe_drop_outliers)
+drop_outliers_residuals_outliers <- data[abs(drop_outliers_residuals) > 3, ]
+
+# Log QQ Plot
+drop_outliers_qq_plot_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_qq_drop_outliers.png"))
+png(drop_outliers_qq_plot_path)
+qqnorm(drop_outliers_residuals, main = "Q-Q Plot (Drop Outliers)")
+qqline(drop_outliers_residuals, col = "red")
+dev.off()
+
+# Log Residuals vs Fitted
+drop_outliers_res_vs_fit_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_residuals_vs_fitted_drop_outliers.png"))
+png(drop_outliers_res_vs_fit_path)
+plot(fitted(fe_drop_outliers), drop_outliers_residuals, main = "Residuals vs Fitted (Drop Outliers)", xlab = "Fitted Values", ylab = "Residuals")
 abline(h = 0, col = "red")
 dev.off()
