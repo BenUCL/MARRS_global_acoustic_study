@@ -73,7 +73,7 @@ data$treatment_residuals <- treatment_residuals
 
 # Identify outliers residuals
 treatment_outliers <- data[abs(treatment_residuals) > 3, ]
-outliers_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_outliers"))
+outliers_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_outliers.csv"))
 write.csv(treatment_outliers, outliers_path, row.names = FALSE)
 
 # QQ Plot

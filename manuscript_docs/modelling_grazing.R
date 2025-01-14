@@ -94,7 +94,7 @@ data$treatment_residuals <- treatment_residuals
 # Identify outliers residuals for Treatment Model
 outliers_dir <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function)
 dir.create(outliers_dir, recursive = TRUE, showWarnings = FALSE)
-outliers_path <- file.path(outliers_dir, paste0(eco_function, "_fe_outliers.txt"))
+outliers_path <- file.path(outliers_dir, paste0(eco_function, "_fe_outliers.csv"))
 write.csv(data[abs(treatment_residuals) > 3, ], outliers_path, row.names = FALSE)
 cat(paste("Saved Treatment Model outliers to:", outliers_path, "\n"))
 
@@ -140,7 +140,7 @@ log_residuals <- residuals(log_lmm_model)
 log_fitted <- fitted(log_lmm_model)
 
 # Save residuals for outliers values inspection
-log_outliers_path <- file.path(outliers_dir, paste0(eco_function, "_transformed_fe_outliers_log"))
+log_outliers_path <- file.path(outliers_dir, paste0(eco_function, "_transformed_fe_outliers_log.csv"))
 write.csv(data[abs(log_residuals) > 3, ], log_outliers_path, row.names = FALSE)
 cat(paste("Saved Log-Transformed Model outliers to:", log_outliers_path, "\n"))
 
@@ -180,7 +180,7 @@ interaction_fitted <- fitted(interaction_model)
 data$interaction_residuals <- interaction_residuals
 
 # Save outliers based on residuals for the interaction model
-interaction_outliers_path <- file.path(outliers_dir, paste0(eco_function, "_interaction_fe_outliers.txt"))
+interaction_outliers_path <- file.path(outliers_dir, paste0(eco_function, "_interaction_fe_outliers.csv"))
 write.csv(data[abs(interaction_residuals) > 3, ], interaction_outliers_path, row.names = FALSE)
 cat(paste("Saved Interaction Model outliers to:", interaction_outliers_path, "\n"))
 

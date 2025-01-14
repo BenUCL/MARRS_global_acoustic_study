@@ -74,7 +74,7 @@ data$treatment_residuals <- treatment_residuals
 
 # Identify outliers residuals
 treatment_outliers <- data[abs(treatment_residuals) > 3, ]
-outliers_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_outliers"))
+outliers_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_outliers.csv"))
 write.csv(treatment_outliers, outliers_path, row.names = FALSE)
 
 # QQ Plot
@@ -134,7 +134,7 @@ sink()
 # Residual diagnostics for Log-Transformed Model
 log_residuals <- residuals(log_treatment_model)
 log_outliers <- data[abs(log_residuals) > 3, ]
-log_outliers_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_outliers_log"))
+log_outliers_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_outliers_log.csv"))
 write.csv(log_outliers, log_outliers_path, row.names = FALSE)
 
 # Log QQ Plot
@@ -155,7 +155,7 @@ dev.off()
 # Ensure the columns for joining are consistent
 # Load the extreme residuals (outliers) from the saved CSV file
 outliers_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_outliers.csv"))
-outliers <- read.csv(extreme_path)
+outliers <- read.csv(outliers_path)
 
 # Ensure the columns for joining are consistent
 outliers$key <- paste(outliers$country, outliers$site, outliers$date, sep = "_")
