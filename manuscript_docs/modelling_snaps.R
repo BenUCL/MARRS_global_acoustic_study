@@ -46,10 +46,6 @@ hist(data$count,
 dev.off()
 
 ###### Start fitting models! ######
-# Check Kenya is infact excluded
-print("Unique entries in the country column:")
-print(unique(data$country))
-
 # Fit RE-Only Model
 re_only_model <- glmer.nb(
   count ~ 1 + 
@@ -75,15 +71,17 @@ treatment_model <- glmer.nb(
   data = data
 )
 
+# Post hoc comparisons of treatments
+posthoc_results <- emmeans(treatment_model, pairwise ~ treatment, adjust = "tukey")
+
 # Append Treatment Model Summary
 sink(summary_path, append = TRUE) # Redirect console output to file (append mode)
 cat(paste0("\n################ FULL MODEL SUMMARY (", eco_function, ") ################\n"))
 print(summary(treatment_model)) # Print summary to file
-sink() # Stop redirecting
 
-# Print summaries to console
-summary(re_only_model)
-summary(treatment_model)
+cat("\n################ POST-HOC TEST RESULTS ################\n\n")
+print(posthoc_results$contrasts)  # Print pairwise comparisons
+sink()
 
 ###### Residual Diagnostics for Models ######
 
@@ -125,14 +123,19 @@ log_lmm_model <- lmer(
   data = data
 )
 
+# Post hoc comparisons of treatments
+posthoc_results_log <- emmeans(log_lmm_model, pairwise ~ treatment, adjust = "tukey")
+
 # Append Log-Transformed Model Summary
 sink(summary_path, append = TRUE) # Redirect console output to file (append mode)
-cat(paste0("\n################ LOG-TRANSFORMED MODEL SUMMARY (", eco_function, ") ################\n"))
-print(summary(log_lmm_model)) # Print summary to file
-sink() # Stop redirecting
+cat("################ LOG-TRANSFORMED LMM ANALYSIS ################\n")
 
-# Print Log-Transformed Model Summary to Console
-summary(log_lmm_model)
+cat("### Full Model Summary ###\n\n")
+print(summary(log_lmm_model)) # Print summary to file
+
+cat("\n################ POST-HOC TEST RESULTS ################\n\n")
+print(posthoc_results_log$contrasts)  # Print pairwise comparisons
+sink()
 
 ###### Residual Diagnostics for Log-Transformed Model ######
 # Extract residuals and fitted values for the log-transformed model
@@ -156,4 +159,80 @@ log_qq_plot_path <- file.path(outliers_dir, paste0(eco_function, "_qq_plot_log.p
 png(log_qq_plot_path)
 qqnorm(log_residuals, main = "Q-Q Plot of Log-Transformed Model Residuals")
 qqline(log_residuals, col = "red")
+dev.off()
+
+
+########### Drop outliers and repeat ######################
+# Ensure the columns for joining are consistent
+# Load the extreme residuals (outliers) from the saved CSV file
+outliers_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_outliers.csv"))
+outliers <- read.csv(outliers_path)
+
+# Ensure the columns for joining are consistent
+outliers$key <- paste(outliers$country, outliers$site, outliers$date, sep = "_")
+data$key <- paste(data$country, data$site, data$date, sep = "_")
+
+# Filter data to exclude rows that match the outliers
+data_no_outliers <- data[!data$key %in% outliers$key, ]
+
+# Print the first few rows and number of rows of the filtered data
+cat("First few rows of filtered data:\n")
+print(head(data_no_outliers))
+cat("\nNumber of rows in filtered data: ", nrow(data_no_outliers), "\n")
+
+# Drop the key column to clean up
+data_no_outliers$key <- NULL
+data$key <- NULL
+
+# Proceed with the models as before
+# RE only
+re_drop_outliers <- glmer.nb(
+  count ~ 1 + 
+    (1 | country) + 
+    (1 | country:site) + 
+    (1 | country:date), 
+  data = data_no_outliers
+)
+
+# FE model
+fe_drop_outliers <- glmer.nb(
+  count ~ treatment + 
+    (1 | country) + 
+    (1 | country:site) + 
+    (1 | country:date), 
+  data = data_no_outliers
+)
+
+# Post hoc comparisons of treatments
+posthoc_results_drop_outliers <- emmeans(fe_drop_outliers, pairwise ~ treatment, adjust = "tukey")
+
+# Append Log-Transformed Model Summaries
+sink(summary_path, append = TRUE)
+cat("\n################ DROP OUTLIERS MODELS ################\n\n")
+cat("### Log RE-Only Model Summary ###\n")
+print(summary(re_drop_outliers))
+
+cat("\n### Log Full Model Summary ###\n")
+print(summary(fe_drop_outliers))
+
+cat("\n################ POST-HOC TEST RESULTS ################\n\n")
+print(posthoc_results_drop_outliers$contrasts)  # Print pairwise comparisons
+sink()
+
+# Residual diagnostics for models with drop outliers
+drop_outliers_residuals <- residuals(fe_drop_outliers)
+drop_outliers_residuals_outliers <- data[abs(drop_outliers_residuals) > 3, ]
+
+# Log QQ Plot
+drop_outliers_qq_plot_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_qq_drop_outliers.png"))
+png(drop_outliers_qq_plot_path)
+qqnorm(drop_outliers_residuals, main = "Q-Q Plot (Drop Outliers)")
+qqline(drop_outliers_residuals, col = "red")
+dev.off()
+
+# Log Residuals vs Fitted
+drop_outliers_res_vs_fit_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function, paste0(eco_function, "_fe_residuals_vs_fitted_drop_outliers.png"))
+png(drop_outliers_res_vs_fit_path)
+plot(fitted(fe_drop_outliers), drop_outliers_residuals, main = "Residuals vs Fitted (Drop Outliers)", xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, col = "red")
 dev.off()

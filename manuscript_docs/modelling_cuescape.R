@@ -1,6 +1,8 @@
 # Global install of required libraries if not present
 if (!require("lme4")) install.packages("lme4", repos = "http://cran.rstudio.com/")
 library(lme4)
+if (!require("emmeans")) install.packages("emmeans", repos = "http://cran.rstudio.com/")
+library(emmeans)
 
 # Check if the environment variable is set
 base_dir <- Sys.getenv("BASE_DIR")
@@ -46,7 +48,6 @@ re_only_model <- glmer.nb(
   data = data
 )
 
-
 # Fit Model with Treatment
 treatment_model <- glmer.nb(
   count ~ treatment + offset(log(max_poss_count)) + 
@@ -55,6 +56,9 @@ treatment_model <- glmer.nb(
     (1 | country:date), 
   data = data
 )
+
+# Post hoc comparisons of treatments
+posthoc_results <- emmeans(treatment_model, pairwise ~ treatment, adjust = "tukey")
 
 # Save all summaries to a single text file
 summary_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/summary_outputs", paste0(eco_function, "_summary.txt"))
@@ -65,6 +69,9 @@ print(summary(re_only_model))
 
 cat("\n### Full Model Summary ###\n")
 print(summary(treatment_model))
+
+cat("\n################ POST-HOC TEST RESULTS ################\n\n")
+print(posthoc_results$contrasts)  # Print pairwise comparisons
 sink()
 
 ###### Inspect Model Fit ######
@@ -121,6 +128,9 @@ log_treatment_model <- lmer(
   data = data
 )
 
+# Post hoc comparisons of treatments
+posthoc_results_log <- emmeans(log_treatment_model, pairwise ~ treatment, adjust = "tukey")
+
 # Append Log-Transformed Model Summaries
 sink(summary_path, append = TRUE)
 cat("\n################ LOG-TRANSFORMED DATA MODELS ################\n\n")
@@ -129,6 +139,9 @@ print(summary(log_re_only_model))
 
 cat("\n### Log Full Model Summary ###\n")
 print(summary(log_treatment_model))
+
+cat("\n################ POST-HOC TEST RESULTS ################\n\n")
+print(posthoc_results_log$contrasts)  # Print pairwise comparisons
 sink()
 
 # Residual diagnostics for Log-Transformed Model
@@ -192,17 +205,21 @@ fe_drop_outliers <- glmer.nb(
   data = data_no_outliers
 )
 
-# Append Drop Outliers Model Summaries to the same summary file
+# Post hoc comparisons of treatments
+posthoc_results_drop_outliers <- emmeans(fe_drop_outliers, pairwise ~ treatment, adjust = "tukey")
+
+# Append Log-Transformed Model Summaries
 sink(summary_path, append = TRUE)
-cat("\n################ DROP OUTLIERS MODELS ################\n\n")
+cat("\n################ LOG-TRANSFORMED DATA MODELS ################\n\n")
+cat("### Log RE-Only Model Summary ###\n")
+print(summary(log_re_only_model))
 
-cat("### Drop Outliers: Random Effect Model ###\n")
-print(summary(re_drop_outliers))
+cat("\n### Log Full Model Summary ###\n")
+print(summary(log_treatment_model))
 
-cat("\n### Drop Outliers: Fixed Effect Model ###\n")
-print(summary(fe_drop_outliers))
-
-sink()  # Close the sink to return output to console
+cat("\n################ POST-HOC TEST RESULTS ################\n\n")
+print(posthoc_results_drop_outliers$contrasts)  # Print pairwise comparisons
+sink()
 
 # Residual diagnostics for models with drop outliers
 drop_outliers_residuals <- residuals(fe_drop_outliers)

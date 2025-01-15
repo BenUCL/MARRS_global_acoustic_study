@@ -1,5 +1,8 @@
-# Global install of lme4 if not present already
+# Global install of required libraries if not present
 if (!require("lme4")) install.packages("lme4", repos = "http://cran.rstudio.com/")
+library(lme4)
+if (!require("emmeans")) install.packages("emmeans", repos = "http://cran.rstudio.com/")
+library(emmeans)
 
 # Imports
 library(lme4)
@@ -75,15 +78,17 @@ treatment_model <- glmer.nb(
   data = data
 )
 
+# Post hoc comparisons of treatments
+posthoc_results <- emmeans(treatment_model, pairwise ~ treatment, adjust = "tukey")
+
 # Append Treatment Model Summary
 sink(summary_path, append = TRUE) # Redirect console output to file (append mode)
 cat(paste0("\n################ FULL MODEL SUMMARY (", eco_function, ") ################\n"))
 print(summary(treatment_model)) # Print summary to file
-sink() # Stop redirecting
 
-# Print summaries to console
-summary(re_only_model)
-summary(treatment_model)
+cat("\n################ POST-HOC TEST RESULTS ################\n\n")
+print(posthoc_results$contrasts)  # Print pairwise comparisons
+sink()
 
 ###### Residual Diagnostics for Models ######
 
@@ -125,14 +130,19 @@ log_lmm_model <- lmer(
   data = data
 )
 
+# Post hoc comparisons of treatments
+posthoc_results_log <- emmeans(log_lmm_model, pairwise ~ treatment, adjust = "tukey")
+
 # Append Log-Transformed Model Summary
 sink(summary_path, append = TRUE) # Redirect console output to file (append mode)
-cat(paste0("\n################ LOG-TRANSFORMED MODEL SUMMARY (", eco_function, ") ################\n"))
-print(summary(log_lmm_model)) # Print summary to file
-sink() # Stop redirecting
+cat("################ LOG-TRANSFORMED LMM ANALYSIS ################\n")
 
-# Print Log-Transformed Model Summary to Console
-summary(log_lmm_model)
+cat("### Full Model Summary ###\n\n")
+print(summary(log_lmm_model)) # Print summary to file
+
+cat("\n################ POST-HOC TEST RESULTS ################\n\n")
+print(posthoc_results_log$contrasts)  # Print pairwise comparisons
+sink()
 
 ###### Residual Diagnostics for Log-Transformed Model ######
 # Extract residuals and fitted values for the log-transformed model
@@ -168,11 +178,17 @@ interaction_model <- glmer.nb(
   data = data
 )
 
-# Append Interaction Model Summary to the summary file
+# Post hoc comparisons of treatments
+posthoc_results_interaction <- emmeans(interaction_model, pairwise ~ treatment, adjust = "tukey")
+
+# Append Log-Transformed Model Summary
 sink(summary_path, append = TRUE) # Redirect console output to file (append mode)
-cat(paste0("\n################ COUNTRY & TREATMENT INTERACTION SUMMARY (", eco_function, ") ################\n"))
+cat("################ TREATMENT:COUNTRY INTERACTION MODEL ################\n")
 print(summary(interaction_model)) # Print summary to file
-sink() # Stop redirecting
+
+cat("\n################ POST-HOC TEST RESULTS ################\n\n")
+print(posthoc_results_interaction$contrasts)  # Print pairwise comparisons
+sink()
 
 # Extract residuals and fitted values for the interaction model
 interaction_residuals <- residuals(interaction_model, type = "pearson")

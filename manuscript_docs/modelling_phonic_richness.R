@@ -1,6 +1,9 @@
 # Global install of required libraries if not present
 if (!require("lme4")) install.packages("lme4", repos = "http://cran.rstudio.com/")
 library(lme4)
+if (!require("emmeans")) install.packages("emmeans", repos = "http://cran.rstudio.com/")
+library(emmeans)
+
 
 # Check if the environment variable is set
 base_dir <- Sys.getenv("BASE_DIR")
@@ -55,6 +58,9 @@ treatment_model <- glmer.nb(
   data = data
 )
 
+# Post hoc comparisons of treatments
+posthoc_results <- emmeans(treatment_model, pairwise ~ treatment, adjust = "tukey")
+
 # Save all summaries to a single text file
 summary_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/summary_outputs", paste0(eco_function, "_summary.txt"))
 sink(summary_path)
@@ -64,6 +70,9 @@ print(summary(re_only_model))
 
 cat("\n### Full Model Summary ###\n")
 print(summary(treatment_model))
+
+cat("\n################ POST-HOC TEST RESULTS ################\n\n")
+print(posthoc_results$contrasts)  # Print pairwise comparisons
 sink()
 
 ###### Inspect Model Fit ######
@@ -98,11 +107,17 @@ alternate_model <- glmer.nb(
   data = data
 )
 
-# Append Alternate Model Summary
+# Post hoc comparisons of treatments
+posthoc_results_drop_date <- emmeans(alternate_model, pairwise ~ treatment, adjust = "tukey")
+
+# Append Log-Transformed Model Summaries
 sink(summary_path, append = TRUE)
 cat("\n################ ALTERNATE MODEL (NO DATE RANDOM EFFECT) ################\n\n")
 cat("### Alternate Model Summary ###\n")
 print(summary(alternate_model))
+
+cat("\n################ POST-HOC TEST RESULTS ################\n\n")
+print(posthoc_results_drop_date$contrasts)  # Print pairwise comparisons
 sink()
 
 # Residual diagnostics for Alternate Model
