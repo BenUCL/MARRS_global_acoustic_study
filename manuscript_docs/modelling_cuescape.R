@@ -57,8 +57,8 @@ treatment_model <- glmer.nb(
   data = data
 )
 
-# Post hoc comparisons of treatments
-posthoc_results <- emmeans(treatment_model, pairwise ~ treatment, adjust = "tukey")
+# Post hoc comparisons of treatments. We set to none, not Tukey as this was causing clear type 2 errors.
+posthoc_results <- emmeans(treatment_model, pairwise ~ treatment, adjust = "none")
 
 # Save all summaries to a single text file
 summary_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/summary_outputs", paste0(eco_function, "_summary.txt"))
@@ -128,8 +128,8 @@ log_treatment_model <- lmer(
   data = data
 )
 
-# Post hoc comparisons of treatments
-posthoc_results_log <- emmeans(log_treatment_model, pairwise ~ treatment, adjust = "tukey")
+# Post hoc comparisons of treatments. We set to none, not Tukey as this was causing clear type 2 errors.
+posthoc_results_log <- emmeans(log_treatment_model, pairwise ~ treatment, adjust = "none")
 
 # Append Log-Transformed Model Summaries
 sink(summary_path, append = TRUE)
@@ -205,8 +205,8 @@ fe_drop_outliers <- glmer.nb(
   data = data_no_outliers
 )
 
-# Post hoc comparisons of treatments
-posthoc_results_drop_outliers <- emmeans(fe_drop_outliers, pairwise ~ treatment, adjust = "tukey")
+# Post hoc comparisons of treatments. We set to none, not Tukey as this was causing clear type 2 errors.
+posthoc_results_drop_outliers <- emmeans(fe_drop_outliers, pairwise ~ treatment, adjust = "none")
 
 # Append Log-Transformed Model Summaries
 sink(summary_path, append = TRUE)

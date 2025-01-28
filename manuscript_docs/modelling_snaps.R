@@ -71,8 +71,8 @@ treatment_model <- glmer.nb(
   data = data
 )
 
-# Post hoc comparisons of treatments
-posthoc_results <- emmeans(treatment_model, pairwise ~ treatment, adjust = "tukey")
+# Post hoc comparisons of treatments. We set to none, not Tukey as this was causing clear type 2 errors.
+posthoc_results <- emmeans(treatment_model, pairwise ~ treatment, adjust = "none")
 
 # Append Treatment Model Summary
 sink(summary_path, append = TRUE) # Redirect console output to file (append mode)
@@ -123,8 +123,8 @@ log_lmm_model <- lmer(
   data = data
 )
 
-# Post hoc comparisons of treatments
-posthoc_results_log <- emmeans(log_lmm_model, pairwise ~ treatment, adjust = "tukey")
+# Post hoc comparisons of treatments. We set to none, not Tukey as this was causing clear type 2 errors.
+posthoc_results_log <- emmeans(log_lmm_model, pairwise ~ treatment, adjust = "none")
 
 # Append Log-Transformed Model Summary
 sink(summary_path, append = TRUE) # Redirect console output to file (append mode)
@@ -203,8 +203,8 @@ fe_drop_outliers <- glmer.nb(
   data = data_no_outliers
 )
 
-# Post hoc comparisons of treatments
-posthoc_results_drop_outliers <- emmeans(fe_drop_outliers, pairwise ~ treatment, adjust = "tukey")
+# Post hoc comparisons of treatments. We set to none, not Tukey as this was causing clear type 2 errors.
+posthoc_results_drop_outliers <- emmeans(fe_drop_outliers, pairwise ~ treatment, adjust = "none")
 
 # Append Log-Transformed Model Summaries
 sink(summary_path, append = TRUE)

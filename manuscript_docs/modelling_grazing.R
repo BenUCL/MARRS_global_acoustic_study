@@ -130,8 +130,8 @@ log_lmm_model <- lmer(
   data = data
 )
 
-# Post hoc comparisons of treatments
-posthoc_results_log <- emmeans(log_lmm_model, pairwise ~ treatment, adjust = "tukey")
+# Post hoc comparisons of treatments. We set to none, not Tukey as this was causing clear type 2 errors.
+posthoc_results_log <- emmeans(log_lmm_model, pairwise ~ treatment, adjust = "none")
 
 # Append Log-Transformed Model Summary
 sink(summary_path, append = TRUE) # Redirect console output to file (append mode)
@@ -178,8 +178,8 @@ interaction_model <- glmer.nb(
   data = data
 )
 
-# Post hoc comparisons of treatments
-posthoc_results_interaction <- emmeans(interaction_model, pairwise ~ treatment, adjust = "tukey")
+# Post hoc comparisons of treatments. We set to none, not Tukey as this was causing clear type 2 errors.
+posthoc_results_interaction <- emmeans(interaction_model, pairwise ~ treatment, adjust = "none")
 
 # Append Log-Transformed Model Summary
 sink(summary_path, append = TRUE) # Redirect console output to file (append mode)
