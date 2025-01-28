@@ -23,7 +23,7 @@ import logging
 import pandas as pd
 
 # Global variables
-SOUND = "snaps" # set to 'scrape' or 'snaps'
+SOUND = "scrape" # set to 'scrape' or 'snaps'
 LOGIT_CUTOFF = 1.0
 
 # If a date has < the COVERAGE_THRESHOLD * expected_daily recordings, exclude it
