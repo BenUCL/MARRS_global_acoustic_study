@@ -42,7 +42,6 @@ capture_fe_results <- function(model, eco_fun, model_group, model_name, coefs_lo
   # Build log-scale rows
   df_log <- data.frame(
     eco_function = eco_fun,
-    model_group = model_group,
     model_name = model_name,
     scale = "Log-Scale",
     term = terms,
@@ -54,10 +53,8 @@ capture_fe_results <- function(model, eco_fun, model_group, model_name, coefs_lo
     p_value = pvals
   )
   
-  # Build exponentiated rows
   df_exp <- data.frame(
     eco_function = eco_fun,
-    model_group = model_group,
     model_name = model_name,
     scale = "Original-Scale",
     term = terms,
@@ -68,6 +65,7 @@ capture_fe_results <- function(model, eco_fun, model_group, model_name, coefs_lo
     Upper_75 = coefs_exp$Upper_75,
     p_value = pvals
   )
+  
   
   # Combine and append
   results_to_append <- rbind(df_log, df_exp)
