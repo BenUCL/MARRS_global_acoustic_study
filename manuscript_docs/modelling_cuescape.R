@@ -66,7 +66,6 @@ capture_fe_results <- function(model, eco_fun, model_group, model_name, coefs_lo
     p_value = pvals
   )
   
-  
   # Combine and append
   results_to_append <- rbind(df_log, df_exp)
   if (!file.exists(combined_results_csv)) {
