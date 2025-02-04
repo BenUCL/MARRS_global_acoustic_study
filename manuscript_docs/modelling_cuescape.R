@@ -208,3 +208,29 @@ cat("\n################ POST-HOC TEST RESULTS ################\n\n")
 posthoc_results_drop_outliers <- emmeans(fe_drop_outliers, pairwise ~ treatment, adjust = "none")
 print(posthoc_results_drop_outliers$contrasts)
 sink()
+
+
+###### Drop Date Random Effect ######
+# RE-Only Model without the date random effect
+re_no_date_model <- glmer.nb(
+  count ~ offset(log(max_poss_count)) +
+    (1 | country) + (1 | country:site),
+  data = data
+)
+
+# Full Model with Treatment without the date random effect
+fe_no_date_model <- glmer.nb(
+  count ~ treatment + offset(log(max_poss_count)) +
+    (1 | country) + (1 | country:site),
+  data = data
+)
+
+sink(summary_path, append = TRUE)
+cat("\n################ MODELS DROPPING DATE RANDOM EFFECT ################\n\n")
+print_model_results(re_no_date_model, "RE Model (Drop Date)", "MODELS DROPPING DATE RANDOM EFFECT", eco_function)
+print_model_results(fe_no_date_model, "FINAL_MODEL", "MODELS DROPPING DATE RANDOM EFFECT", eco_function)
+
+cat("\n################ POST-HOC TEST RESULTS ################\n\n")
+posthoc_results_no_date <- emmeans(fe_no_date_model, pairwise ~ treatment, adjust = "none")
+print(posthoc_results_no_date$contrasts)
+sink()

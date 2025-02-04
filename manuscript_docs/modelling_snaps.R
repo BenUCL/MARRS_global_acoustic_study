@@ -162,7 +162,7 @@ posthoc_results <- emmeans(treatment_model, pairwise ~ treatment, adjust = "none
 
 sink(summary_path, append = TRUE)
 cat(paste0("\n################ FULL MODEL SUMMARY (", eco_function, ") ################\n"))
-print_model_results(treatment_model, "Full Model with Treatment")
+print_model_results(treatment_model, "FINAL_MODEL")
 
 cat("\n################ POST-HOC TEST RESULTS ################\n\n")
 print(posthoc_results$contrasts)

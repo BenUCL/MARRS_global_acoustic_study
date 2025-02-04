@@ -156,7 +156,7 @@ sink(summary_path)
 
 cat("################ RAW DATA MODELS ################\n\n")
 print_model_results(re_only_model, "RE-Only Model")
-print_model_results(treatment_model, "Full Model with Treatment")
+print_model_results(treatment_model, "FINAL_MODEL")
 
 cat("\n################ POST-HOC TEST RESULTS ################\n\n")
 print(posthoc_results$contrasts)
