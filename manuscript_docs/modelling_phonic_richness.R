@@ -120,11 +120,11 @@ print_model_results <- function(model, model_name) {
   cat("\n### Original-Scale (Exponentiated) Estimates and Wald Confidence Intervals ###\n")
   print(coefs_exp)
   
-  # Capture FE results if model_name suggests it's FE (not RE-Only)
-  if (grepl("Full Model|Alternate Model", model_name, ignore.case = TRUE)) {
+  if (grepl("BASE_MODEL|DROP DATE", model_name, ignore.case = TRUE)) {
     capture_fe_results(model, eco_function, model_name, coefs_log, coefs_exp, coefs_raw)
   }
 }
+
 
 ###### Fit Models ######
 # 1. RE-Only Model
@@ -156,7 +156,7 @@ sink(summary_path)
 
 cat("################ RAW DATA MODELS ################\n\n")
 print_model_results(re_only_model, "RE-Only Model")
-print_model_results(treatment_model, "FINAL_MODEL")
+print_model_results(treatment_model, "BASE_MODEL")
 
 cat("\n################ POST-HOC TEST RESULTS ################\n\n")
 print(posthoc_results$contrasts)
@@ -208,7 +208,7 @@ posthoc_results_drop_date <- emmeans(alternate_model, pairwise ~ treatment, adju
 
 sink(summary_path, append = TRUE)
 cat("\n################ ALTERNATE MODEL (NO DATE RANDOM EFFECT) ################\n\n")
-print_model_results(alternate_model, "Alternate Model")
+print_model_results(alternate_model, "DROP DATE")
 
 cat("\n################ POST-HOC TEST RESULTS ################\n\n")
 print(posthoc_results_drop_date$contrasts)

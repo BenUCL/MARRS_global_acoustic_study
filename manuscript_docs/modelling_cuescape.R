@@ -109,7 +109,7 @@ print_model_results <- function(model, model_name, model_group, eco_fun) {
   print(coefs_exp)
   
   # If it's a fixed-effects model, capture & append results
-  if (grepl("Full Model|FE Model", model_name, ignore.case = TRUE)) {
+  if (grepl("BASE_MODEL|FE Model", model_name, ignore.case = TRUE)) {
     capture_fe_results(model, eco_fun, model_group, model_name, coefs_log, coefs_exp, coefs_raw)
   }
 }
@@ -125,7 +125,7 @@ re_only_model <- glmer.nb(
 # Full Model with Treatment
 treatment_model <- glmer.nb(
   count ~ treatment + offset(log(max_poss_count)) +
-    (1 | country) + (1 | country:site) + (1 | country:date),
+    (1 | country) + (1 | country:site),# + (1 | country:date), # DROP DATE
   data = data
 )
 
@@ -138,7 +138,7 @@ sink(summary_path)
 
 cat("################ RAW DATA MODELS ################\n\n")
 print_model_results(re_only_model, "RE-Only Model", "RAW DATA MODELS", eco_function)
-print_model_results(treatment_model, "Full Model with Treatment", "RAW DATA MODELS", eco_function)
+print_model_results(treatment_model, "BASE_MODEL", "RAW DATA MODELS", eco_function)
 
 cat("\n################ POST-HOC TEST RESULTS ################\n\n")
 posthoc_results <- emmeans(treatment_model, pairwise ~ treatment, adjust = "none")
