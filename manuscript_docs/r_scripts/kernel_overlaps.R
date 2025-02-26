@@ -5,35 +5,12 @@
 
 
 # Required libraries
+if (!require("devtools")) install.packages("devtools")
+devtools::install_github("MeredithRidout/overlap")
 if (!require("circular")) install.packages("circular", repos = "http://cran.rstudio.com/")
 library(circular)
 if (!require("dplyr")) install.packages("dplyr", repos = "http://cran.rstudio.com/")
 library(dplyr)
-
-### The overlap package would not install, instead we define the necessary functions here:
-# Define a function to compute the overlap coefficient between two circular distributions.
-calcOverlap <- function(x, y, n = 512, bw = "nrd") {
-  # x and y are vectors (in radians)
-  d1 <- density.circular(x, bw = bw, n = n)
-  d2 <- density.circular(y, bw = bw, n = n)
-  dx <- d1$x[2] - d1$x[1]
-  overlap <- sum(pmin(d1$y, d2$y)) * dx
-  return(overlap)
-}
-
-# Define a function to bootstrap the overlap coefficient for 95% confidence intervals.
-bootstrapOverlap <- function(x, y, nboot = 10000, n = 512, bw = "nrd") {
-  boot_vals <- numeric(nboot)
-  n_x <- length(x)
-  n_y <- length(y)
-  for (i in 1:nboot) {
-    sample_x <- sample(x, n_x, replace = TRUE)
-    sample_y <- sample(y, n_y, replace = TRUE)
-    boot_vals[i] <- calcOverlap(sample_x, sample_y, n = n, bw = bw)
-  }
-  return(quantile(boot_vals, probs = c(0.025, 0.975)))
-}
-
 
 
 # Get BASE_DIR from environment variable
@@ -131,11 +108,12 @@ for(country in names(COUNTRY_CONFIG)){
         min_n <- min(n1, n2)
         estimator <- ifelse(min_n >= 50, "Dhat4", "Dhat1")
         
-        # Compute the overlap coefficient using our custom function.
-        overlap_est <- calcOverlap(as.numeric(x_rad), as.numeric(y_rad))
+        # Compute the overlap coefficient using data in radians.
+        overlap_est <- overlapEst(as.numeric(x_rad), as.numeric(y_rad), type = estimator)
         
         # Bootstrap 95% confidence intervals using 10,000 iterations.
-        ci <- bootstrapOverlap(as.numeric(x_rad), as.numeric(y_rad), nboot = 10000)
+        boot_res <- overlapBootstrap(as.numeric(x_rad), as.numeric(y_rad), type = estimator, nboot = 10000)
+        ci <- boot_res$CI  # Expecting ci to be a numeric vector: c(lower, upper)
         
         # Run Watson's two-sample test for homogeneity
         watson_test <- watson.two.test(x_rad, y_rad)
