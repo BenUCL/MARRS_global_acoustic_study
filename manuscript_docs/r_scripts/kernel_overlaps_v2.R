@@ -1,4 +1,11 @@
-
+#!/usr/bin/env Rscript
+# ------------------------------------------------------------------------------
+# Script: kernel_v2_results.R
+#
+# Difference to V1 script: 
+# Only aggregate overlap scores from across sounds that are present in all three
+# treatment in question: i)healthy, degraded, restored, ii) healthy, degraded, newly_restored
+#
 # Description:
 #   This script processes detection CSV files from various countries to compute
 #   per-sound overlap coefficients and perform Watson's two-sample tests between 
@@ -11,23 +18,33 @@
 #     - Flags comparisons with a sample size (n1 or n2) below 100 by setting an 
 #       'exclude' column to "yes"; otherwise, it is set to "no".
 #
-#   Aggregated results (mean values across sounds) are computed only for those
-#   comparisons where both groups have n >= 100.
+#   Aggregated results are computed separately for two groups:
+#     (a) For treatments healthy, degraded, and restored – only using sounds that 
+#         have results (n>=100 in each) for all three comparisons (healthy vs 
+#         restored, degraded vs restored, healthy vs degraded). A column "sounds_used"
+#         lists the sounds used.
+#     (b) For treatments healthy, degraded, and newly_restored – similarly.
 #
 # Inputs:
-#   - CSV files named *_raw_detection_times.csv 
-#     Each CSV must contain at least the columns: "treatment" and "time" (time in hours).
+#   - CSV files named *_raw_detection_times.csv located in:
+#         BASE_DIR/marrs_acoustics/data/results/functions/kernels/plots/{country}
+#     Each CSV must contain at least the columns: "treatment" and "time" (in hours).
 #
 # Outputs:
-#   - A text file containing both per-sound results and aggregated (filtered) results.
+#   - A text file containing:
+#         1. Per-sound results (with an 'exclude' flag),
+#         2. Aggregated results for the "restored" group,
+#         3. Aggregated results for the "newly_restored" group.
+#     The output is saved to:
+#         BASE_DIR/marrs_acoustics/data/results/functions/kernels/kernel_v2_results.txt
 #
-# Note, the circular package only gives p-value thresholds (e.g., 0.1, 0.001). This is 
-# a limitation of the package.
+# Dependencies:
+#   - R packages: overlap, circular, dplyr
+#   - System packages: libudunits2-dev, libgdal-dev
 #
-# Also run these commands from the linux terminal to install overlap dependencies:
-#   sudo apt-get install libudunits2-dev
-#   sudo apt-get install libgdal-dev
-#
+# Author: [Your Name]
+# Date: [Current Date]
+# ------------------------------------------------------------------------------
 
 # Required libraries
 if (!require("overlap")) install.packages("overlap", repos = "http://cran.rstudio.com/")
@@ -57,48 +74,42 @@ COUNTRY_CONFIG <- list(
   mexico = list(duty_cycle = 4)
 )
 
-# Define treatment levels (order matters for pairwise comparisons)
+# Define treatment levels
 TREATMENTS <- c("healthy", "degraded", "restored", "newly_restored")
 
-# Define output file path using BASE_DIR
-result_file <- file.path(BASE_DIR, "marrs_acoustics/data/results/functions/kernels/kernel_v1_results.txt")
+# Define output file path (kernel_v2_results.txt)
+result_file <- file.path(BASE_DIR, "marrs_acoustics/data/results/functions/kernels/kernel_v2_results.txt")
 
 # Initialize list to store per-sound results
 results_list <- list()
 
-# Loop over each country
+# ------------------- Per-sound Processing -------------------
 for(country in names(COUNTRY_CONFIG)){
   cat("\n==================================================================================\n")
   cat("Processing country:", country, "\n")
   
-  # Folder where the raw detection CSV files are saved
   country_folder <- file.path(BASE_DIR, "marrs_acoustics/data/results/functions/kernels/plots", country)
   if(!dir.exists(country_folder)){
     cat("Folder does not exist for", country, "\n")
     next
   }
   
-  # List CSV files ending with "_raw_detection_times.csv"
   csv_files <- list.files(country_folder, pattern = "_raw_detection_times\\.csv$", full.names = TRUE)
   if(length(csv_files) == 0){
     cat("No raw detection CSV files found for", country, "\n")
     next
   }
   
-  # Process each sound's CSV file
   for(csv_file in csv_files){
     sound_name <- sub("_raw_detection_times\\.csv$", "", basename(csv_file))
     cat("\nProcessing sound:", sound_name, "\n")
     
     data <- read.csv(csv_file, stringsAsFactors = FALSE)
-    
-    # Check required columns
     if(!all(c("treatment", "time") %in% names(data))){
       cat("CSV file", csv_file, "does not have required columns. Skipping.\n")
       next
     }
     
-    # Loop over each pair of treatments
     for(i in 1:(length(TREATMENTS)-1)){
       for(j in (i+1):length(TREATMENTS)){
         treat1 <- TREATMENTS[i]
@@ -110,7 +121,7 @@ for(country in names(COUNTRY_CONFIG)){
         
         cat("\nComparison:", treat1, "vs", treat2, " | n1:", n1, " | n2:", n2, "\n")
         
-        # Set exclude flag: "yes" if either group has < 100 detections, "no" otherwise.
+        # Set exclude flag: "yes" if either n1 or n2 is below 100
         exclude_val <- ifelse(n1 < 100 | n2 < 100, "yes", "no")
         
         if(n1 == 0 || n2 == 0){
@@ -135,7 +146,6 @@ for(country in names(COUNTRY_CONFIG)){
           next
         }
         
-        # Convert times to radians for circular analysis.
         x_rad <- circular(data1 * 2 * pi / 24, units = "radians", modulo = "2pi")
         y_rad <- circular(data2 * 2 * pi / 24, units = "radians", modulo = "2pi")
         
@@ -183,7 +193,7 @@ for(country in names(COUNTRY_CONFIG)){
             stat_numeric <- as.numeric(stat_val)
           }
           list(p_value = p_val_numeric, statistic = stat_numeric)
-        }, error = function(e) {
+        }, error = function(e){
           cat("Watson's test failed! Error message:", e$message, "\nAssigning NA\n")
           list(p_value = NA_real_, statistic = NA_real_)
         })
@@ -215,9 +225,22 @@ for(country in names(COUNTRY_CONFIG)){
 
 results_df <- do.call(rbind, results_list)
 
-# For aggregated results, only include rows where exclude == "no"
-filtered_df <- results_df %>% filter(exclude == "no")
-aggregated <- filtered_df %>%
+# ------------------- Aggregated Results: Restored Group -------------------
+# Use only sounds that have data (with exclude == "no") for healthy, degraded, and restored.
+sounds_restored <- results_df %>%
+  filter(exclude == "no") %>%
+  group_by(country, sound) %>%
+  summarise(has_hr = any(treatment1 == "healthy" & treatment2 == "restored"),
+            has_dr = any(treatment1 == "degraded" & treatment2 == "restored"),
+            has_hd = any(treatment1 == "healthy" & treatment2 == "degraded"),
+            .groups = "drop") %>%
+  filter(has_hr, has_dr, has_hd)
+
+agg_restored <- results_df %>%
+  filter(exclude == "no",
+         sound %in% sounds_restored$sound,
+         ( (treatment1 == "healthy" & treatment2 %in% c("degraded", "restored")) |
+             (treatment1 == "degraded" & treatment2 == "restored") )) %>%
   group_by(country, treatment1, treatment2) %>%
   summarise(mean_overlap = mean(overlap, na.rm = TRUE),
             mean_ci_lower = mean(ci_lower, na.rm = TRUE),
@@ -225,26 +248,67 @@ aggregated <- filtered_df %>%
             mean_watson_p = mean(watson_p, na.rm = TRUE),
             mean_watson_stat = mean(watson_stat, na.rm = TRUE),
             n_sounds = n(),
+            sounds_used = paste(unique(sound), collapse = ", "),
             .groups = "drop")
 
-# Convert aggregated results to data.frame
-aggregated_df <- as.data.frame(aggregated)
+# ------------------- Aggregated Results: Newly_Restored Group -------------------
+# Use only sounds that have data (with exclude == "no") for healthy, degraded, and newly_restored.
+sounds_newly <- results_df %>%
+  filter(exclude == "no") %>%
+  group_by(country, sound) %>%
+  summarise(has_hn = any(treatment1 == "healthy" & treatment2 == "newly_restored"),
+            has_dn = any(treatment1 == "degraded" & treatment2 == "newly_restored"),
+            has_hd = any(treatment1 == "healthy" & treatment2 == "degraded"),
+            .groups = "drop") %>%
+  filter(has_hn, has_dn, has_hd)
 
-# ------------------- Output Section -------------------
+agg_newly <- results_df %>%
+  filter(exclude == "no",
+         sound %in% sounds_newly$sound,
+         ( (treatment1 == "healthy" & treatment2 %in% c("degraded", "newly_restored")) |
+             (treatment1 == "degraded" & treatment2 == "newly_restored") )) %>%
+  group_by(country, treatment1, treatment2) %>%
+  summarise(mean_overlap = mean(overlap, na.rm = TRUE),
+            mean_ci_lower = mean(ci_lower, na.rm = TRUE),
+            mean_ci_upper = mean(ci_upper, na.rm = TRUE),
+            mean_watson_p = mean(watson_p, na.rm = TRUE),
+            mean_watson_stat = mean(watson_stat, na.rm = TRUE),
+            n_sounds = n(),
+            sounds_used = paste(unique(sound), collapse = ", "),
+            .groups = "drop")
+
+# ------------------- Output -------------------
+# Convert aggregated tables to plain data.frames and ensure "sounds_used" is character.
+agg_restored_df <- as.data.frame(agg_restored)
+if("sounds_used" %in% names(agg_restored_df)) {
+  agg_restored_df$sounds_used <- as.character(agg_restored_df$sounds_used)
+}
+agg_newly_df <- as.data.frame(agg_newly)
+if("sounds_used" %in% names(agg_newly_df)) {
+  agg_newly_df$sounds_used <- as.character(agg_newly_df$sounds_used)
+}
+
 # Format tables for fixed-width printing
 results_formatted <- format(results_df, justify = "right")
-aggregated_formatted <- format(aggregated_df, justify = "right")
+agg_restored_formatted <- format(agg_restored_df, justify = "right")
+agg_newly_formatted <- format(agg_newly_df, justify = "right")
 
+# Write output to kernel_v2_results.txt with headers.
 sink(result_file)
 cat("Per-sound overlap results:\n")
 header1 <- paste(colnames(results_df), collapse = "   ")
 writeLines(header1)
 writeLines(apply(results_formatted, 1, paste, collapse = "   "))
 
-cat("\n\nAggregated overlap results (mean across sounds; only include comparisons with both n1 and n2 >= 100):\n")
-header2 <- paste(colnames(aggregated_df), collapse = "   ")
+cat("\n\nAggregated overlap results (Restored group: healthy, degraded, restored; only include sounds with n>=100 in all):\n")
+header2 <- paste(colnames(agg_restored_df), collapse = "   ")
 writeLines(header2)
-writeLines(apply(aggregated_formatted, 1, paste, collapse = "   "))
+writeLines(apply(agg_restored_formatted, 1, paste, collapse = "   "))
+
+cat("\n\nAggregated overlap results (Newly_Restored group: healthy, degraded, newly_restored; only include sounds with n>=100 in all):\n")
+header3 <- paste(colnames(agg_newly_df), collapse = "   ")
+writeLines(header3)
+writeLines(apply(agg_newly_formatted, 1, paste, collapse = "   "))
 sink()
 
 cat("\nResults saved to", result_file, "\n")
