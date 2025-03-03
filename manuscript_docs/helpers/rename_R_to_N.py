@@ -1,4 +1,4 @@
-"""Rename R to N in Mald file names
+"""Rename R to N in Mald or kenya file names
 The Maldives R sites are restored sites. However, they are newly restored.
 I therefore renamed these to match the Indonesia format which had a mix of both,
 where N was used to denote newly restored sites.
@@ -7,7 +7,7 @@ where N was used to denote newly restored sites.
 import os
 from tqdm import tqdm
 
-folder_path = "/media/mars_5tb_drive/mars_global_acoustic_study/maldives_acoustics/raw_audio"
+folder_path = "/media/bwilliams/New Volume/marrs_acoustics/kenya_acoustics/Restored_M17"
 
 def rename_files(folder_path: str) -> None:
     try:
