@@ -1,3 +1,4 @@
+"""Fix county prefix in audio files.    """
 import os
 directory = r'D:\mars_global_acoustic_study\maldives_acoustics'
 new_prefix = 'mal'

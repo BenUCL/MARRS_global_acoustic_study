@@ -1,10 +1,11 @@
-"""Rename audio to have country and site prefix e.g add 'ind_D5_' prefix for Indonesia degraded site 5"""
+"""Rename audio to have country and site prefix e.g add 'ind_D5_' prefix for Indonesia degraded site 5.
+Parse the directory name to extract the class and the number, sub dirs must have '_M' in them"""
 
 import os
 from typing import List, Tuple
 
-BASE_PATH = r'/media/bwilliams/New Volume/marrs_acoustics/maldives_acoustics'
-PREFIX = 'mal'
+BASE_PATH = r'/media/bwilliams/New Volume/marrs_acoustics/australia_acoustics'
+PREFIX = 'aus'
 
 def get_directories(base_path: str) -> List[str]:
     """Returns a list of directories in the given base path."""
