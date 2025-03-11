@@ -11,8 +11,12 @@ import logging
 from typing import Set
 
 # Global constants
-OUTPUT_DIR = "/home/bwilliams/ucl_projects/marrs_acoustics/data/output_dir_maldives/agile_outputs"
-RAW_FILE_LIST_PATH = "/home/bwilliams/ucl_projects/marrs_acoustics/data/output_dir_maldives/raw_file_list.csv"
+base_dir = os.getenv('BASE_DIR')
+if not base_dir:
+    raise ValueError("BASE_DIR environment variable is not set.")
+
+OUTPUT_DIR = os.path.join(base_dir, "marrs_acoustics/data/output_dir_maldives/agile_outputs")
+RAW_FILE_LIST_PATH = os.path.join(base_dir, "marrs_acoustics/data/output_dir_maldives/raw_file_list.csv")
 PREFIX = "raw_audio/"
 
 def load_raw_file_set(file_path: str) -> Set[str]:
