@@ -7,7 +7,7 @@ where N was used to denote newly restored sites.
 import os
 from tqdm import tqdm
 
-folder_path = "/media/bwilliams/New Volume/marrs_acoustics/kenya_acoustics/Restored_M17"
+folder_path = "/media/bwilliams/New Volume/mars_global_acoustic_study/kenya_acoustics/raw_audio"
 
 def rename_files(folder_path: str) -> None:
     try:

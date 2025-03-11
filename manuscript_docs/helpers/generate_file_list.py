@@ -2,8 +2,8 @@ import os
 import pandas as pd
 
 # Define paths
-AUDIO_DIR = "/media/bwilliams/New Volume/mars_global_acoustic_study/mexico_acoustics/raw_audio"
-OUTPUT_CSV = "/media/bwilliams/New Volume/mars_global_acoustic_study/mexico_acoustics/raw_file_list.csv"
+AUDIO_DIR = "/media/bwilliams/New Volume/mars_global_acoustic_study/kenya_acoustics/raw_audio"
+OUTPUT_CSV = "/media/bwilliams/New Volume/mars_global_acoustic_study/kenya_acoustics/raw_file_list.csv"
 
 def list_audio_files(directory: str) -> list[str]:
   """Returns a list of all .wav and .WAV files in the given directory."""

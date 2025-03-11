@@ -15,7 +15,8 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 FOLDER_PATH = "/media/bwilliams/New Volume/mars_global_acoustic_study/australia_acoustics/raw_audio"
 
-# Time offset. The original audio relative to what it should be in hours.
+# Time offset. What the audio should be relative to the original.
+# So if -3 that means the audio timestamp should be shifted from 4am to 7am for example.
 COUNTRY_CONFIG: Dict[str, Dict[str, int]] = {
   "australia": {"offset": -10},
   "kenya": {"offset": -3},
