@@ -13,7 +13,7 @@ from typing import Dict, List
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
-FOLDER_PATH = "/media/bwilliams/New Volume/mars_global_acoustic_study/australia_acoustics/raw_audio"
+FOLDER_PATH = "/media/bwilliams/New Volume/mars_global_acoustic_study/maldives_acoustics/raw_audio"
 
 # Time offset. What the audio should be relative to the original.
 # So if -3 that means the audio timestamp should be shifted from 4am to 7am for example.
