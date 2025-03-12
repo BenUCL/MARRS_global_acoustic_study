@@ -3,26 +3,34 @@
 Use this to write out detections for the final false positive check.
 This script processes inference CSVs for multiple countries and sounds.
 For each country, it finds each sound folder that contains a CSV (e.g. croak_inference.csv),
-filters rows with logit >= 1.0, randomly selects 100 eligible rows (seeded),
-and writes out 5-second audio clips. The new filename starts with the logit score,
-then the timestamp in seconds (with "s"), and finally the original filename.
+filters rows with logit >= 1.0, selects eligible rows, and writes out 5-second audio clips.
+The new filename starts with the logit score, then the timestamp in seconds (with "s"),
+and finally the original filename. This can be done at random or for set logit thresholds.
 """
 
 import os
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional, List
 import pandas as pd
 import librosa
 import soundfile as sf
 from tqdm import tqdm
 
 # Global constants
-SELECT_MODE = "random"  # 'random' or 'ordered'. Change to "ordered" to select by logit ascending from LOGIT_CUTOFF
-COUNTRIES = ["maldives", "kenya", "mexico", "indonesia", "australia"] # List of countries to process
-LOGIT_CUTOFF = 1.0 # The minimum logit score to write out
-NUM_FILES = 100 # Number of files to write out per sound folder
-SEED = 42
+SELECT_MODE: Literal["random", "ordered"] = "ordered"  # 'random' or 'ordered'
+COUNTRIES: List[str] = ["maldives", "kenya", "mexico", "indonesia", "australia"]
+LOGIT_CUTOFF: float = 1.0  # Minimum logit score to write out. Lower will write more detections but increase the false positive rate.
+NUM_FILES: Optional[int] = None  # Set to None to process all eligible files.
+SEED: int = 42
+
+# Global paths (that don't change per country)
+BASE_AUDIO_DIR: Path = Path("/media/bwilliams/New Volume/mars_global_acoustic_study")
+DETECTIONS_DIR: Path = BASE_AUDIO_DIR / "detections"
+
+# Path patterns that iterate over country and sound during loop
+OUTPUT_DIR_PATTERN: str = "marrs_acoustics/data/output_dir_{country}/agile_outputs"
+INFERENCE_CSV_PATTERN: str = "{sound}/{sound}_inference.csv"
 
 def process_sound_folder(country: str, sound: str, base_dir: str) -> None:
   """
@@ -33,11 +41,12 @@ def process_sound_folder(country: str, sound: str, base_dir: str) -> None:
       sound: Sound folder name.
       base_dir: Base directory from environment variable.
   """
-  csv_path = os.path.join(
-      base_dir,
-      f"marrs_acoustics/data/output_dir_{country}/agile_outputs/{sound}/{sound}_inference.csv"
-  )
-  if not os.path.exists(csv_path):
+  # Build paths using global constants and country-specific parts
+  audio_base_path: Path = BASE_AUDIO_DIR / f"{country}_acoustics"
+  save_dir: Path = DETECTIONS_DIR
+  save_dir.mkdir(parents=True, exist_ok=True)
+  csv_path: Path = Path(base_dir) / OUTPUT_DIR_PATTERN.format(country=country) / INFERENCE_CSV_PATTERN.format(sound=sound)
+  if not csv_path.exists():
     logging.info(f"CSV not found: {csv_path}. Skipping {sound} in {country}.")
     return
 
@@ -48,33 +57,35 @@ def process_sound_folder(country: str, sound: str, base_dir: str) -> None:
     logging.info(f"No rows with logit >= {LOGIT_CUTOFF} in {csv_path}.")
     return
 
-  # Randomly sample NUM_FILES rows (or all if less than NUM_FILES)
   if SELECT_MODE == "random":
-    df_sample = df_filtered.sample(n=NUM_FILES, random_state=SEED) if len(df_filtered) > NUM_FILES else df_filtered
+    df_sample = (
+      df_filtered.sample(n=NUM_FILES, random_state=SEED)
+      if NUM_FILES and len(df_filtered) > NUM_FILES
+      else df_filtered
+    )
   elif SELECT_MODE == "ordered":
-    df_sample = df_filtered.sort_values("logit").head(NUM_FILES)
+    df_sample = (
+      df_filtered.sort_values("logit").head(NUM_FILES)
+      if NUM_FILES
+      else df_filtered
+    )
   else:
-    logging.error(f"Unknown selection mode: {SELECT_MODE}. Defaulting to random.")
-    df_sample = df_filtered.sample(n=NUM_FILES, random_state=SEED) if len(df_filtered) > NUM_FILES else df_filtered
-
-  audio_base_path = Path(f"/media/bwilliams/New Volume/mars_global_acoustic_study/{country}_acoustics")
-  save_dir = Path(os.path.join(base_dir, f"marrs_acoustics/data/pred_audio_samples/{country}/{sound}"))
-  save_dir.mkdir(parents=True, exist_ok=True)
+    logging.error(f"Unknown selection mode: {SELECT_MODE}. Defaulting to all rows.")
+    df_sample = df_filtered
 
   for _, row in tqdm(df_sample.iterrows(), total=len(df_sample), desc=f"Processing {country}/{sound}"):
     try:
-      filename = row["filename"].strip()
-      timestamp_s = float(row["timestamp_s"])
-      logit = float(row["logit"])
-      full_audio_path = audio_base_path / filename
+      filename: str = row["filename"].strip()
+      timestamp_s: float = float(row["timestamp_s"])
+      logit: float = float(row["logit"])
+      full_audio_path: Path = audio_base_path / filename
 
       # Load a 5-second clip starting at timestamp_s
-      y, sr = librosa.load(full_audio_path, sr=None, offset=timestamp_s, duration=5.0)
-
-      timestamp_str = f"{int(timestamp_s):02d}s"
-      new_filename = f"{logit:.2f}_{timestamp_str}_{os.path.basename(filename)}"
-      save_path = save_dir / new_filename
-      sf.write(save_path, y, sr)
+      y, sr = librosa.load(str(full_audio_path), sr=None, offset=timestamp_s, duration=5.0)
+      timestamp_str = f"start-{int(timestamp_s):02d}s"
+      new_filename = f"logit-{logit:.2f}_{timestamp_str}_{os.path.basename(filename)}"
+      save_path: Path = save_dir / new_filename
+      sf.write(str(save_path), y, sr)
     except Exception as e:
       logging.error(f"Error processing {filename} in {country}/{sound}: {e}")
 
@@ -86,16 +97,16 @@ def process_country(country: str, base_dir: str) -> None:
       country: Country name.
       base_dir: Base directory from environment variable.
   """
-  agile_dir = os.path.join(base_dir, f"marrs_acoustics/data/output_dir_{country}/agile_outputs")
-  if not os.path.exists(agile_dir):
+  agile_dir: Path = Path(base_dir) / f"marrs_acoustics/data/output_dir_{country}/agile_outputs"
+  if not agile_dir.exists():
     logging.info(f"Agile outputs directory not found for {country}: {agile_dir}. Skipping.")
     return
 
   for entry in os.listdir(agile_dir):
-    folder_path = os.path.join(agile_dir, entry)
-    if os.path.isdir(folder_path):
-      csv_file = os.path.join(folder_path, f"{entry}_inference.csv")
-      if os.path.exists(csv_file):
+    folder_path = agile_dir / entry
+    if folder_path.is_dir():
+      csv_file: Path = folder_path / f"{entry}_inference.csv"
+      if csv_file.exists():
         process_sound_folder(country, entry, base_dir)
       else:
         logging.info(f"Inference CSV not found for sound {entry} in {country}.")
@@ -103,7 +114,7 @@ def process_country(country: str, base_dir: str) -> None:
 def main() -> None:
   """Main function to process all countries and their sound folders."""
   logging.basicConfig(level=logging.INFO, format="%(message)s")
-  BASE_DIR = os.getenv("BASE_DIR")
+  BASE_DIR: Optional[str] = os.getenv("BASE_DIR")
   if not BASE_DIR:
     raise ValueError("BASE_DIR environment variable is not set.")
 
