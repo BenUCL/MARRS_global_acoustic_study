@@ -43,7 +43,8 @@ def process_sound_folder(country: str, sound: str, base_dir: str) -> None:
   """
   # Build paths using global constants and country-specific parts
   audio_base_path: Path = BASE_AUDIO_DIR / f"{country}_acoustics"
-  save_dir: Path = DETECTIONS_DIR
+  # Create detections folder for this country and sound.
+  save_dir: Path = DETECTIONS_DIR / country / sound
   save_dir.mkdir(parents=True, exist_ok=True)
   csv_path: Path = Path(base_dir) / OUTPUT_DIR_PATTERN.format(country=country) / INFERENCE_CSV_PATTERN.format(sound=sound)
   if not csv_path.exists():
@@ -52,6 +53,8 @@ def process_sound_folder(country: str, sound: str, base_dir: str) -> None:
 
   df = pd.read_csv(csv_path)
   df.columns = df.columns.str.strip()
+  # Ensure the logit column is numeric even if there is trailing whitespace.
+  df["logit"] = pd.to_numeric(df["logit"].astype(str).str.strip(), errors="coerce")
   df_filtered = df[df["logit"] >= LOGIT_CUTOFF]
   if df_filtered.empty:
     logging.info(f"No rows with logit >= {LOGIT_CUTOFF} in {csv_path}.")
@@ -73,11 +76,12 @@ def process_sound_folder(country: str, sound: str, base_dir: str) -> None:
     logging.error(f"Unknown selection mode: {SELECT_MODE}. Defaulting to all rows.")
     df_sample = df_filtered
 
-  for _, row in tqdm(df_sample.iterrows(), total=len(df_sample), desc=f"Processing {country}/{sound}"):
+  # Use itertuples() for slightly more efficient row iteration.
+  for row in tqdm(df_sample.itertuples(index=False), total=len(df_sample), desc=f"Processing {country}/{sound}"):
     try:
-      filename: str = row["filename"].strip()
-      timestamp_s: float = float(row["timestamp_s"])
-      logit: float = float(row["logit"])
+      filename: str = row.filename.strip()
+      timestamp_s: float = float(row.timestamp_s)
+      logit: float = float(row.logit)
       full_audio_path: Path = audio_base_path / filename
 
       # Load a 5-second clip starting at timestamp_s
