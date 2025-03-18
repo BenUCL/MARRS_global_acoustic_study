@@ -174,12 +174,13 @@ print(posthoc_results_log$contrasts)
 sink()
 
 ###### Drop Outliers and Re-run ######
-outliers_path <- file.path(
-  base_dir,
-  "marrs_acoustics/data/results/functions/stats/model_inspection",
-  eco_function,
-  paste0(eco_function, "_fe_outliers.csv")
-)
+# Make outliers csv
+outliers_dir <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/model_inspection", eco_function)
+dir.create(outliers_dir, recursive = TRUE, showWarnings = FALSE)
+outliers_path <- file.path(outliers_dir, paste0(eco_function, "_fe_outliers.csv"))
+write.csv(data[abs(treatment_residuals) > 3, ], outliers_path, row.names = FALSE)
+
+# Read outliers csv
 outliers <- read.csv(outliers_path)
 outliers$key <- paste(outliers$country, outliers$site, outliers$date, sep = "_")
 data$key <- paste(data$country, data$site, data$date, sep = "_")
