@@ -223,7 +223,7 @@ alternate_outliers <- data[abs(alternate_residuals) > 3, ]
 alternate_outliers_path <- file.path(base_dir,
                                      "marrs_acoustics/data/results/functions/stats/model_inspection",
                                      eco_function,
-                                     paste0(eco_function, "_dropdate_outliers"))
+                                     paste0(eco_function, "_dropdate_outliers.csv"))
 write.csv(alternate_outliers, alternate_outliers_path, row.names = FALSE)
 
 # QQ Plot
