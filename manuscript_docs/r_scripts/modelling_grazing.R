@@ -152,7 +152,7 @@ re_only_model <- glmer.nb(
   data = data
 )
 
-# Path for summary
+# Path for summary output
 summary_path <- file.path(base_dir, "marrs_acoustics/data/results/functions/stats/summary_outputs",
                           paste0(eco_function, "_summary.txt"))
 
