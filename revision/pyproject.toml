@@ -1,0 +1,14 @@
+[project]
+name = "marrs-journal-revision"
+version = "0.1.0"
+description = "Reproducible manuscript revision analyses and document generation"
+requires-python = ">=3.13"
+dependencies = [
+  "python-docx==1.2.0",
+  "lxml==6.1.3",
+  "pandas==3.0.6",
+  "numpy==2.5.3",
+  "scipy==1.18.1",
+  "pymupdf==1.28.2",
+  "matplotlib==3.11.2",
+]

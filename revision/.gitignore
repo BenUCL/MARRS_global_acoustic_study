@@ -1,0 +1,11 @@
+.venv/
+.R-library/
+data/
+scratch/
+__pycache__/
+*.pyc
+docs/
+notes/
+outputs/
+resubmission/
+.~lock.*#
