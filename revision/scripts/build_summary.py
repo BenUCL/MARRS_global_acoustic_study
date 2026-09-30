@@ -5,10 +5,10 @@ from docx.shared import Pt
 ROOT=Path(__file__).resolve().parents[1]
 SECTIONS=[
 ('Changes made',[
-'Updated phonic richness results and figures. The positive pooled contrasts remained when Indonesian recordings were subsampled to match recording effort elsewhere.',
+'Updated phonic richness results and figures. The positive contrasts across all projects remained when Indonesian recordings were subsampled to match recording effort elsewhere.',
 'Changed grazing and shrimp models to raw detections with recorded-effort offsets; corrected the cuescape Methods to match its existing exposure adjustment. Fixed a Results error attributing the large Mexican shrimp contrast to healthy rather than mid-stage restored habitat.',
 'Added Indonesia-exclusion and alternative-model checks. Removing Indonesia substantially weakens the evidence: no remaining habitat contrast against degraded reefs excludes zero at 95% confidence. The draft now qualifies generalisation.',
-'Added clearer limits on causal interpretation, acoustic proxies, baseline selection and single-site restoration comparisons. Shortened Text S3 to explain why each check was done, how it was done and what it found. Figures retain their original style and both 75% and 95% intervals, with updated model values.'
+'Added clearer limits on causal interpretation, acoustic proxies, baseline selection and single-site restoration comparisons. Shortened Text S1 to explain why each check was done, how it was done and what it found. Figures retain their original style and both 75% and 95% intervals, with updated model values.'
 ]),
 ('Tested or considered, but not adopted as firm conclusions',[
 'No claim that country effects eliminate Indonesia’s influence. No global fish-richness/biomass gradient was invented from missing survey data.',

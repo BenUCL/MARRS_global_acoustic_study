@@ -169,7 +169,7 @@ def main() -> None:
                   'intervals': [75, 95], 'percentage_transform': '100 * (exp(log_coefficient) - 1)',
                   'palette': {k: v['color'] for k, v in TREATMENT_INFO.items()},
                   'country_layout': [['Australia', 'Indonesia'], ['Maldives', 'Mexico'], ['Kenya', 'Habitat type legend']],
-                  'note': 'N counts follow fitted data; grazing excludes Kenya. Original model results are not refitted.'}
+                  'note': 'N counts follow fitted data; grazing excludes Kenya. The across-project recruitment-cuescape model includes date within project.'}
     (ROOT / 'outputs/figures/style_verification.json').write_text(json.dumps(provenance, indent=2))
 
 if __name__ == '__main__':

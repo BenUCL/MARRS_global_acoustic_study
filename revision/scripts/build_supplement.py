@@ -17,13 +17,13 @@ def main() -> None:
     """Preserve all existing tables, images and references; append analysis results."""
     models=pd.read_csv(ROOT/'outputs/all_model_coefficients.csv')
     d=Document();d.styles['Normal'].font.name='Arial';d.styles['Normal'].font.size=Pt(10)
-    d.add_heading('Text S3. Sensitivity analyses',level=1)
+    d.add_heading('Text S1. Sensitivity analyses',level=1)
     paragraphs=[
-        'Finalised models: The following checks assess the finalised models (Table S3, “All projects”; sample sizes in Table S6). To account for unequal recording time, grazing and shrimp counts were modelled as negative binomial counts with log(recorded hours) as an offset, estimating detections per hour of recording time available. Recruitment cuescape models used log(recorded nighttime hours) as the offset. These measure detection rates, not animal abundance. Grazing models excluded Kenya, where the grazing sonotype was not detected.',
-        'Model assumptions: Richness varied less than the negative binomial model assumes. The date-within-project variance was effectively zero in the finalised phonic-richness model (2.62 × 10⁻¹³) and zero in the richness model with fixed project effects. In the finalised shrimp model, date-within-project variance was small (0.0031), but did not collapse to zero. We therefore retained these date effects because our model structure was ecologically motivated; recordings from the same project and date may share environmental conditions. Date effects accounted for variation in several other models, so retaining them provided a consistent approach rather than selecting them separately for each indicator. To test alternative ways of accounting for project and day-to-day differences, we fitted project as a fixed rather than random effect and added a date effect to the pooled cuescape model. For both checks, every habitat comparison against degraded reefs kept the same direction. Significant differences remained significant and non-significant differences remained non-significant at p < 0.05 (Table S7).',
-        'Indonesia’s influence: To test whether Indonesia’s larger sample (21 of 45 sites; Table S6) strongly influenced pooled findings, we refitted all four indicators without it. Every habitat comparison against degraded reefs kept the same direction, but previously significant differences became non-significant; the other comparisons remained non-significant. All 95% confidence intervals included no difference (Table S3). Including Indonesia adds site replication, which can improve precision and increase the chance of detecting real habitat differences as statistically significant. This check cannot separate that contribution from project-specific differences.',
-        'Recording effort and richness: To test whether longer recording time increased observed richness, we reduced Indonesia’s schedule from one minute every two minutes to one every four, matching other projects. We tested both alternate-recording subsets separately, retaining whole one-minute recordings. Days required at least 324 of 360 scheduled recordings; both comparisons retained the same 1,060 site-days. After recalculating richness and refitting the pooled model, all three habitat comparisons against degraded reefs kept the same positive direction and remained statistically significant in both subsets. Thus, downsampling did not change either the direction or significance of these comparisons (all p < 0.03; Table S4).',
-        'Coral cover: To test whether habitat comparisons changed after accounting for coral cover, models with and without cover used the same observations from sites with matched cover measurements. Values reported as <5% were tested as 0%, 2.5% and 5%. Adding cover weakened some cuescape comparisons; the mid-stage grazing comparison was positive (p = 0.018) under the 2.5% assumption (Table S8). These checks are exploratory: cover may itself respond to restoration, so adjustment changes the question being tested.',
+        'Finalised models: The following checks assess the finalised models (Table S3, “All projects”; sample sizes in Table S4). All four models included habitat type as a fixed effect and random intercepts for project, site within project and date within project. To account for unequal recording time, grazing and shrimp counts were modelled as negative binomial counts with log(recorded hours) as an offset, estimating detections per hour of recording time available. Recruitment cuescape models used log(recorded nighttime hours) as the offset. These measure detection rates, not animal abundance. Grazing models excluded Kenya, where the grazing sonotype was not detected.',
+        'Recording effort and richness: To test whether longer recording time increased observed richness, we reduced Indonesia’s schedule from one minute every two minutes to one every four, matching other projects. We tested both alternate-recording subsets separately, retaining whole one-minute recordings. Days required at least 324 of 360 scheduled recordings; both comparisons retained the same 1,060 site-days. After recalculating richness and refitting the model combining all projects, all three habitat comparisons against degraded reefs kept the same positive direction and remained statistically significant in both subsets. Thus, downsampling did not change either the direction or significance of these comparisons (all p < 0.03; Table S5).',
+        'Indonesia’s influence: To test whether Indonesia’s larger sample (21 of 45 sites; Table S4) strongly influenced findings across projects, we refitted all four indicators without it. Every habitat comparison against degraded reefs kept the same direction, but previously significant differences became non-significant; the other comparisons remained non-significant. All 95% confidence intervals included no difference (Table S3). Including Indonesia adds site replication, which can improve precision and increase the chance of detecting real habitat differences as statistically significant. This check cannot separate that contribution from project-specific differences.',
+        'Model assumptions: Richness varied less than the negative binomial model assumes. The date-within-project variance was effectively zero in the finalised phonic-richness model (2.62 × 10⁻¹³) and zero in the richness model with fixed project effects. In the finalised shrimp model, date-within-project variance was small (0.0031), but did not collapse to zero. We retained date effects in all four finalised models because our model structure was ecologically motivated; recordings from the same project and date may share environmental conditions. Date effects accounted for variation in several models, so retaining them provided a consistent approach rather than selecting terms separately for each indicator. To test an alternative way of accounting for differences among projects, we fitted project as a fixed rather than random effect. Every habitat comparison against degraded reefs kept the same direction, with significant differences remaining significant and non-significant differences remaining non-significant at p < 0.05 (Table S6).',
+        'Coral cover: To test whether habitat comparisons changed after accounting for coral cover, models with and without cover used the same observations from sites with matched cover measurements. Values reported as <5% were tested as 0%, 2.5% and 5%. Adding cover weakened some cuescape comparisons; the mid-stage grazing comparison was positive (p = 0.018) under the 2.5% assumption (Table S7). These checks are exploratory: coral cover itself responds to restoration and therefore covaries strongly with habitat type, so including it in the main analysis may obscure part of the restoration effect that the main analysis seeks to assess.',
     ]
     for p in paragraphs:d.add_paragraph(p)
     def table(title,headers,rows):
@@ -49,17 +49,8 @@ def main() -> None:
         ex={'phonic_richness':'exclude_indonesia','graze_count':'actual_effort_exclude_indonesia','snaps_count':'actual_effort_exclude_indonesia'}.get(metric,'exclude_indonesia')
         for term,habitat in [('treatmenthealthy','Healthy'),('treatmentnewly_restored','Early-stage'),('treatmentrestored','Mid-stage')]:
             rows.append([label,habitat,result(metric,SCENARIOS[metric],term),result(metric,ex,term)])
-    table('Table S3. Pooled log response ratios [95% CI] against degraded reefs',['Indicator','Habitat','All projects','Without Indonesia'],rows)
-    d.add_paragraph('Tables S3–S4 and S7–S8 report log response ratios (zero = no difference; positive = higher than degraded), 95% confidence intervals and two-sided Wald p-values without adjustment for multiple comparisons.')
-    rows=[]
-    for term,habitat in [('treatmenthealthy','Healthy'),('treatmentnewly_restored','Early-stage'),('treatmentrestored','Mid-stage')]:
-        rows.append([habitat]+[result('phonic_richness',{'reconstructed':'corrected_baseline','phase0':'duty_phase0','phase2':'duty_phase2'}[phase],term)
-                              for phase in ['reconstructed','phase0','phase2']])
-    table('Table S4. Phonic richness under full and matched recording effort',
-          ['Habitat','Full effort','Four-minute subset 1','Four-minute subset 2'],rows)
-    ages=pd.read_csv(ROOT/'outputs/indonesia_age_site_permutation.csv')
-    table('Table S5. Site-level age associations within Indonesia',['Indicator','Independent sites','Spearman ρ','Exact two-sided p'],[[METRICS[r.metric],r.sites,f'{r.rho:.3f}',f'{r.exact_two_sided_p:.3f}'] for r in ages.itertuples()])
-    d.add_paragraph('Spearman ρ measures whether indicators increase (positive) or decrease (negative) with age. Two-sided p-values use all possible age assignments among the six sites.')
+    table('Table S3. Across-project log response ratios [95% CI] against degraded reefs',['Indicator','Habitat','All projects','Without Indonesia'],rows)
+    d.add_paragraph('Tables S3 and S5–S7 report log response ratios (zero = no difference; positive = higher than degraded), 95% confidence intervals and two-sided Wald p-values without adjustment for multiple comparisons.')
     counts=[]
     for metric,label in METRICS.items():
         data=pd.read_csv(ROOT/'data/results/functions'/f'{metric}.csv')
@@ -68,26 +59,32 @@ def main() -> None:
     counts=pd.DataFrame(counts);counts.to_csv(ROOT/'outputs/sample_sizes.csv',index=False)
     pivot=counts.pivot(index=['country','habitat'],columns='indicator',values='days').fillna(0).astype(int)
     sites=counts.groupby(['country','habitat']).sites.max()
-    table('Table S6. Spatial replication and recording-day observations',['Project','Habitat','Sites','Cuescape days','Richness days','Grazing days','Shrimp days'],[[country.capitalize(),{'newly_restored':'Early-stage','restored':'Mid-stage','healthy':'Healthy','degraded':'Degraded'}[habitat],sites.loc[(country,habitat)],r['Recruitment cuescape'],r['Phonic richness'],r['Grazing'],r['Shrimp activity']] for (country,habitat),r in pivot.iterrows()])
-    # Keep existing table numbers stable; report comparisons from stored fits.
+    table('Table S4. Spatial replication and recording-day observations',['Project','Habitat','Sites','Cuescape days','Richness days','Grazing days','Shrimp days'],[[country.capitalize(),{'newly_restored':'Early-stage','restored':'Mid-stage','healthy':'Healthy','degraded':'Degraded'}[habitat],sites.loc[(country,habitat)],r['Recruitment cuescape'],r['Phonic richness'],r['Grazing'],r['Shrimp activity']] for (country,habitat),r in pivot.iterrows()])
+    rows=[]
+    for term,habitat in [('treatmenthealthy','Healthy'),('treatmentnewly_restored','Early-stage'),('treatmentrestored','Mid-stage')]:
+        rows.append([habitat]+[result('phonic_richness',{'reconstructed':'corrected_baseline','phase0':'duty_phase0','phase2':'duty_phase2'}[phase],term)
+                              for phase in ['reconstructed','phase0','phase2']])
+    table('Table S5. Phonic richness under full and matched recording effort',
+          ['Habitat','Full effort','Four-minute subset 1','Four-minute subset 2'],rows)
     habitats=[('treatmenthealthy','Healthy'),('treatmentnewly_restored','Early-stage'),('treatmentrestored','Mid-stage')]
     rows=[]
     for metric,label in METRICS.items():
         for term,habitat in habitats:
-            rows.append([label,habitat,result(metric,SCENARIOS[metric],term),
-                         result(metric,'country_fixed',term),
-                         result(metric,'include_date',term) if metric=='settlement_cuescape' else '—'])
-    table('Table S7. Habitat comparisons under alternative model assumptions',
-          ['Indicator','Habitat','Finalised model','Fixed project effects','Added date effect'],rows)
-    d.add_paragraph('Each alternative changes the feature named in its column. All indicators use negative binomial models. The date check adds a random date intercept to the pooled cuescape model. Dashes indicate checks that do not apply.')
+            rows.append([label,habitat,result(metric,SCENARIOS[metric],term),result(metric,'country_fixed',term)])
+    table('Table S6. Habitat comparisons under alternative model assumptions',
+          ['Indicator','Habitat','Finalised model','Fixed project effects'],rows)
+    d.add_paragraph('All indicators use negative binomial models. The alternative models treat project as a fixed rather than random effect.')
     rows=[]
     for metric,label in METRICS.items():
         for term,habitat in habitats:
             rows.append([label,habitat]+[result(metric,scenario,term) for scenario in
                          ['cover_complete_baseline','cover_bound_0','cover_bound_2.5','cover_bound_5']])
-    table('Table S8. Habitat comparisons with and without adjustment for coral cover',
+    table('Table S7. Habitat comparisons with and without adjustment for coral cover',
           ['Indicator','Habitat','Without cover','With cover: <5% as 0%','With cover: <5% as 2.5%','With cover: <5% as 5%'],rows)
     d.add_paragraph('Within each indicator, all four models use the same observations with matched coral-cover measurements. The three adjusted models differ only in the value assigned to cover reported as <5%. Compare columns within this table rather than attributing differences from Table S3 solely to coral cover.')
+    ages=pd.read_csv(ROOT/'outputs/indonesia_age_site_permutation.csv')
+    table('Table S8. Site-level age associations within Indonesia',['Indicator','Independent sites','Spearman ρ','Exact two-sided p'],[[METRICS[r.metric],r.sites,f'{r.rho:.3f}',f'{r.exact_two_sided_p:.3f}'] for r in ages.itertuples()])
+    d.add_paragraph('Spearman ρ measures whether indicators increase (positive) or decrease (negative) with age. Two-sided p-values use all possible age assignments among the six sites.')
     age = pd.read_csv(ROOT / 'data/results/functions/sites_age.csv')
     age_rows = age[age.site.str.startswith('R')].copy()
     site_values = age_rows[['country', 'site', 'age']].copy()

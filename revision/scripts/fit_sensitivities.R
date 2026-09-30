@@ -57,7 +57,10 @@ run_metric <- function(metric) {
   d$age_months <- NULL
   d <- merge(d, read.csv(file.path(root,'data/results/functions/sites_age.csv')),
              by=c('country','site'),all.x=TRUE)
-  use_date <- metric!='settlement_cuescape'
+  # Use the same ecologically motivated date-within-project structure for all
+  # finalised indicators. Daily conditions can affect sites sampled within the
+  # same project on the same date, including the recruitment cuescape.
+  use_date <- TRUE
   fit_one(d,metric,'baseline',date=use_date)
   if (metric %in% c('graze_count','snaps_count')) {
     effort <- read.csv(file.path(root,'data',paste0(metric,'_effort.csv')))
@@ -74,7 +77,6 @@ run_metric <- function(metric) {
   }
   fit_one(subset(d,country!='indonesia'),metric,'exclude_indonesia',date=use_date)
   fit_one(d,metric,'country_fixed',date=use_date,country_fixed=TRUE)
-  if (!use_date) fit_one(d,metric,'include_date',date=TRUE)
   # Same-row baseline is essential: missing cover removes the Maldives entirely.
   cover <- subset(d,!is.na(coral_cover))
   for (bound in c(0,2.5,5)) {
